@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>用户注册 - 校园活动管理系统</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="container">
+    <h1>校园活动管理系统</h1>
+    <h2>用户注册</h2>
+
+    <div class="banner success" th:if="${success}" th:text="${success}"></div>
+    <div class="banner error" th:if="${bizError}" th:text="${bizError}"></div>
+
+    <form th:action="@{/register}" th:object="${registerForm}" method="post">
+        <label for="username">账号</label>
+        <input type="text" id="username" th:field="*{username}" placeholder="3~50 个字符，登录用">
+        <p class="field-error" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></p>
+
+        <label for="password">密码</label>
+        <input type="password" id="password" th:field="*{password}" placeholder="至少 6 位">
+        <p class="field-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></p>
+
+        <label for="confirmPassword">确认密码</label>
+        <input type="password" id="confirmPassword" th:field="*{confirmPassword}">
+        <p class="field-error" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></p>
+
+        <label for="name">姓名</label>
+        <input type="text" id="name" th:field="*{name}" placeholder="真实姓名或昵称">
+        <p class="field-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></p>
+
+        <label for="role">角色</label>
+        <select id="role" th:field="*{role}">
+            <option value="">-- 请选择 --</option>
+            <option value="STUDENT">学生</option>
+            <option value="TEACHER">教师</option>
+        </select>
+        <p class="field-error" th:if="${#fields.hasErrors('role')}" th:errors="*{role}"></p>
+
+        <button type="submit">注 册</button>
+    </form>
+    <p style="text-align:center; margin-top:12px;">
+        <a class="link" th:href="@{/}">返回首页</a>
+    </p>
+</div>
+</body>
+</html>
