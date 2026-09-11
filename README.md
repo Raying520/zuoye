@@ -26,13 +26,14 @@ Java 17 · Spring Boot 3 · Thymeleaf · Spring Data JPA · H2 数据库 · Mave
 - [x] FR5 活动报名/取消报名：三重校验 BR2/BR3/BR4，数据库唯一约束兜底
 - [x] FR6 报名名单查看：教师查看自己活动的报名学生名单
 - [x] FR7 活动管理：教师结束/取消自己发布的活动（BR5）
+- [x] M5 验证收尾：S1–S6 验证记录表、实验报告素材清单
 
 ## 快速验证
 
 1. 启动后访问 http://localhost:8080/
 2. 注册一个教师账号和一个学生账号
 3. 分别登录，观察是否进入不同的主页
-4. 直接访问 http://localhost:8080/teacher/home 或 http://localhost:8080/student/home（未登录时）应被拦截回登录页
+4. 按 `docs/验证记录.md` 中的 S1–S6 逐项验证并填写实际结果
 
 ## 项目文档
 
@@ -40,4 +41,6 @@ Java 17 · Spring Boot 3 · Thymeleaf · Spring Data JPA · H2 数据库 · Mave
 |---|---|
 | docs/需求分析.md | 业务背景、用户角色、候选需求 FR1–FR7、业务规则 BR1–BR5 |
 | docs/工程意图.md | V1.0 目标、范围、约束、完成依据、迭代里程碑 M1–M5 |
-| docs/软件设计.md | 模块划分、核心流程图（mermaid）、数据设计、可追踪性 |
+| docs/软件设计.md | 模块划分、核心流程图（mermaid）、数据设计、可追踪性、设计调整记录 |
+| docs/验证记录.md | S1–S6 验收场景验证表（本地运行后填写） |
+| docs/实验报告素材清单.md | 报告各章节对应素材、代码位置、截图清单、Git 提交时间线 |
