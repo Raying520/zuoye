@@ -44,3 +44,4 @@ Java 17 · Spring Boot 3 · Thymeleaf · Spring Data JPA · H2 数据库 · Mave
 | docs/软件设计.md | 模块划分、核心流程图（mermaid）、数据设计、可追踪性、设计调整记录 |
 | docs/验证记录.md | S1–S6 验收场景验证表（本地运行后填写） |
 | docs/实验报告素材清单.md | 报告各章节对应素材、代码位置、截图清单、Git 提交时间线 |
+| docs/项目实现总览.md | 全部代码整合映射：FR/BR 与 Controller/Service/页面一一对应 |
