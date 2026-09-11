@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>报名名单 - 校园活动管理系统</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
+        th, td { padding: 10px; border-bottom: 1px solid #e3e3de; text-align: left; }
+        th { color: #5f5e5a; font-weight: 500; }
+        .empty { text-align: center; color: #888780; padding: 24px; }
+    </style>
+</head>
+<body>
+<div class="container" style="max-width: 720px;">
+    <h1>报名名单</h1>
+    <p class="muted">
+        活动：<strong th:text="${activity.title}">活动标题</strong>
+        · 共 <strong th:text="${#lists.size(enrollments)}">0</strong> 人报名
+    </p>
+
+    <table th:if="${!#lists.isEmpty(enrollments)}">
+        <thead>
+        <tr>
+            <th>序号</th>
+            <th>姓名</th>
+            <th>报名时间</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="e, iter : ${enrollments}">
+            <td th:text="${iter.index + 1}">1</td>
+            <td th:text="${names.get(e.userId)}">姓名</td>
+            <td th:text="${#temporals.format(e.createTime, 'yyyy-MM-dd HH:mm')}">时间</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div th:if="${#lists.isEmpty(enrollments)}" class="empty">
+        暂时还没有学生报名。
+    </div>
+
+    <p style="text-align:center; margin-top: 24px;">
+        <a class="link" th:href="@{/activities/manage}">返回我的活动</a>
+    </p>
+</div>
+</body>
+</html>

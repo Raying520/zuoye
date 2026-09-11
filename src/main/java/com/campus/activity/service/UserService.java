@@ -8,6 +8,10 @@ import com.campus.activity.repository.UserRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 /**
  * 用户服务：业务规则集中层
  * 注册流程（对应软件设计 3.1）：
@@ -58,5 +62,16 @@ public class UserService {
         user.setName(form.getName());
         user.setRole(form.getRole());
         userRepository.save(user);
+    }
+
+    /** 按 ID 查询用户（FR6 查看报名名单用） */
+    public User findById(Long id) {
+        return userRepository.findById(id).orElse(null);
+    }
+
+    /** 批量查询用户 ID 到姓名的映射（FR6 查看报名名单用） */
+    public Map<Long, String> findNamesByIds(List<Long> ids) {
+        return userRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(User::getId, User::getName));
     }
 }

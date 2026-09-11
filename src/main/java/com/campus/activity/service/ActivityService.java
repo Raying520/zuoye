@@ -65,8 +65,49 @@ public class ActivityService {
         return activityRepository.findByTeacherIdOrderByActivityTimeDesc(teacherId);
     }
 
+    /** 教师查询自己发布的活动并附带报名人数（FR7 管理列表） */
+    public List<ActivityListItem> findByTeacherWithEnrollmentCount(Long teacherId) {
+        List<Activity> activities = activityRepository.findByTeacherIdOrderByActivityTimeDesc(teacherId);
+        List<ActivityListItem> result = new ArrayList<>(activities.size());
+        for (Activity activity : activities) {
+            long count = enrollmentRepository.countByActivityId(activity.getId());
+            result.add(new ActivityListItem(activity, count));
+        }
+        return result;
+    }
+
     /** 按 ID 查询活动 */
     public Activity findById(Long id) {
         return activityRepository.findById(id).orElse(null);
+    }
+
+    /** 教师取消活动（FR7 + BR5） */
+    @Transactional
+    public void cancel(Long activityId, UserSession teacher) {
+        Activity activity = activityRepository.findById(activityId)
+                .orElseThrow(() -> new IllegalArgumentException("活动不存在"));
+        if (!activity.getTeacherId().equals(teacher.getId())) {
+            throw new IllegalArgumentException("只能管理自己发布的活动");
+        }
+        if (activity.getStatus() != Activity.Status.OPEN) {
+            throw new IllegalArgumentException("活动当前状态不可取消");
+        }
+        activity.setStatus(Activity.Status.CANCELLED);
+        activityRepository.save(activity);
+    }
+
+    /** 教师结束活动（FR7 + BR5） */
+    @Transactional
+    public void close(Long activityId, UserSession teacher) {
+        Activity activity = activityRepository.findById(activityId)
+                .orElseThrow(() -> new IllegalArgumentException("活动不存在"));
+        if (!activity.getTeacherId().equals(teacher.getId())) {
+            throw new IllegalArgumentException("只能管理自己发布的活动");
+        }
+        if (activity.getStatus() != Activity.Status.OPEN) {
+            throw new IllegalArgumentException("活动当前状态不可结束");
+        }
+        activity.setStatus(Activity.Status.CLOSED);
+        activityRepository.save(activity);
     }
 }

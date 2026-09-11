@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>我的活动 - 校园活动管理系统</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .card { text-align: left; border: 1px solid #e3e3de; border-radius: 8px; padding: 16px; margin-bottom: 12px; background: #fff; }
+        .card h3 { margin-bottom: 6px; font-size: 16px; }
+        .meta { color: #5f5e5a; font-size: 13px; margin-bottom: 4px; }
+        .status { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+        .status-open { background: #e1f5ee; color: #085041; }
+        .status-closed { background: #f0f0f0; color: #5f5e5a; }
+        .status-cancelled { background: #fcebeb; color: #791f1f; }
+        .actions { margin-top: 10px; }
+        .actions form { display: inline; }
+        .actions button { width: auto; padding: 6px 12px; margin-right: 8px; font-size: 12px; }
+        .btn-secondary { background: #888780; }
+        .btn-danger { background: #a32d2d; }
+    </style>
+</head>
+<body>
+<div class="container" style="max-width: 720px;">
+    <h1>我的活动</h1>
+    <p class="muted">教师活动管理（FR7）</p>
+
+    <div class="banner success" th:if="${success}" th:text="${success}"></div>
+    <div class="banner error" th:if="${bizError}" th:text="${bizError}"></div>
+
+    <div th:if="${#lists.isEmpty(items)}" class="banner">
+        你还没有发布任何活动。
+    </div>
+
+    <div th:each="item : ${items}" class="card">
+        <h3 th:text="${item.activity.title}">活动标题</h3>
+        <p class="meta">
+            <span th:text="${#temporals.format(item.activity.activityTime, 'yyyy-MM-dd HH:mm')}">时间</span>
+            · <span th:text="${item.activity.place}">地点</span>
+        </p>
+        <p class="meta">
+            容量：<span th:text="${item.activity.capacity}">0</span> 人 · 已报：<span th:text="${item.enrolledCount}">0</span> 人
+            <span class="status" th:classappend="${item.activity.status.name() == 'OPEN'} ? 'status-open' : (${item.activity.status.name() == 'CLOSED'} ? 'status-closed' : 'status-cancelled')"
+                  th:text="${item.activity.status.name() == 'OPEN'} ? '报名中' : (${item.activity.status.name() == 'CLOSED'} ? '已结束' : '已取消')">
+                状态
+            </span>
+        </p>
+
+        <div class="actions" th:if="${item.activity.status.name() == 'OPEN'}">
+            <a class="btn" th:href="@{/activities/{id}/enrollments(id=${item.activity.id})}" style="width:auto; padding:6px 12px; font-size:12px;">查看名单</a>
+            <form th:action="@{/activities/{id}/close(id=${item.activity.id})}" method="post">
+                <button type="submit" class="btn-secondary">结束报名</button>
+            </form>
+            <form th:action="@{/activities/{id}/cancel(id=${item.activity.id})}" method="post">
+                <button type="submit" class="btn-danger">取消活动</button>
+            </form>
+        </div>
+        <div class="actions" th:if="${item.activity.status.name() != 'OPEN'}">
+            <a class="btn" th:href="@{/activities/{id}/enrollments(id=${item.activity.id})}" style="width:auto; padding:6px 12px; font-size:12px;">查看名单</a>
+            <span class="muted">该活动已不可报名</span>
+        </div>
+    </div>
+
+    <p style="text-align:center; margin-top: 16px;">
+        <a class="link" th:href="@{/teacher/home}">返回教师工作台</a>
+    </p>
+</div>
+</body>
+</html>
