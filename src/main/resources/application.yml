@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    # H2 嵌入式数据库，数据保存在项目下的 db/ 目录（已 gitignore）
+    url: jdbc:h2:file:./db/campus
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      # 启动时按实体自动建表/更新表结构
+      ddl-auto: update
+    show-sql: true
+  h2:
+    console:
+      enabled: true
+
+server:
+  port: 8080
