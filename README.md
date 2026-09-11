@@ -16,6 +16,24 @@ Java 17 · Spring Boot 3 · Thymeleaf · Spring Data JPA · H2 数据库 · Mave
 
 数据保存在项目目录下的 `db/` 文件夹（已加入 .gitignore，不入库）；删除该文件夹后重启即可重置数据。
 
+## 当前进度
+
+- [x] M1 项目骨架：Spring Boot 启动、H2 配置、首页
+- [x] FR1 用户注册：表单校验、账号唯一、BCrypt 哈希
+- [x] FR2 登录与角色分流：Session 会话、登录拦截器、教师/学生主页分流
+- [ ] FR3 活动发布（待开发）
+- [ ] FR4 活动浏览（待开发）
+- [ ] FR5 活动报名（待开发）
+- [ ] FR6 报名名单（待开发）
+- [ ] FR7 活动管理（待开发）
+
+## 快速验证
+
+1. 启动后访问 http://localhost:8080/
+2. 注册一个教师账号和一个学生账号
+3. 分别登录，观察是否进入不同的主页
+4. 直接访问 http://localhost:8080/teacher/home 或 http://localhost:8080/student/home（未登录时）应被拦截回登录页
+
 ## 项目文档
 
 | 文档 | 内容 |

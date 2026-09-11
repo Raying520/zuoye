@@ -1,7 +1,11 @@
 package com.campus.activity.controller;
 
+import com.campus.activity.dto.LoginForm;
 import com.campus.activity.dto.RegisterForm;
+import com.campus.activity.dto.UserSession;
+import com.campus.activity.interceptor.LoginInterceptor;
 import com.campus.activity.service.UserService;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -45,8 +49,47 @@ public class UserController {
             model.addAttribute("bizError", e.getMessage());
             return "register";
         }
-        // 3. 注册成功（下一步实现登录后，跳转目标将改为 /login）
-        redirectAttributes.addFlashAttribute("success", "注册成功，请牢记你的账号和密码");
-        return "redirect:/register";
+        // 3. 注册成功，跳转到登录页
+        redirectAttributes.addFlashAttribute("success", "注册成功，请登录");
+        return "redirect:/login";
+    }
+
+    /** 登录页面 */
+    @GetMapping("/login")
+    public String loginPage(LoginForm loginForm) {
+        return "login";
+    }
+
+    /** 提交登录（FR2） */
+    @PostMapping("/login")
+    public String login(@Valid LoginForm loginForm,
+                        BindingResult bindingResult,
+                        Model model,
+                        HttpSession session) {
+        // 1. 表单校验失败：回到登录页显示字段错误
+        if (bindingResult.hasErrors()) {
+            return "login";
+        }
+        // 2. 业务校验（账号存在且密码匹配）
+        UserSession userSession;
+        try {
+            userSession = userService.login(loginForm);
+        } catch (IllegalArgumentException e) {
+            model.addAttribute("bizError", e.getMessage());
+            return "login";
+        }
+        // 3. 写入 Session，完成角色分流
+        session.setAttribute(LoginInterceptor.SESSION_KEY, userSession);
+        if (userSession.isTeacher()) {
+            return "redirect:/teacher/home";
+        }
+        return "redirect:/student/home";
+    }
+
+    /** 登出 */
+    @GetMapping("/logout")
+    public String logout(HttpSession session) {
+        session.invalidate();
+        return "redirect:/";
     }
 }

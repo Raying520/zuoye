@@ -1,6 +1,8 @@
 package com.campus.activity.service;
 
+import com.campus.activity.dto.LoginForm;
 import com.campus.activity.dto.RegisterForm;
+import com.campus.activity.dto.UserSession;
 import com.campus.activity.entity.User;
 import com.campus.activity.repository.UserRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -19,6 +21,22 @@ public class UserService {
 
     public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
+    }
+
+    /**
+     * 登录校验（FR2）
+     * 按账号查询用户，BCrypt 比对密码。
+     *
+     * @return 登录会话信息
+     * @throws IllegalArgumentException 账号不存在或密码错误
+     */
+    public UserSession login(LoginForm form) {
+        User user = userRepository.findByUsername(form.getUsername())
+                .orElseThrow(() -> new IllegalArgumentException("账号或密码错误"));
+        if (!passwordEncoder.matches(form.getPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("账号或密码错误");
+        }
+        return UserSession.fromUser(user);
     }
 
     /**

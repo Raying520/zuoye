@@ -9,7 +9,25 @@
 <div class="container center">
     <h1>校园活动管理系统</h1>
     <p class="muted">V1.0 · 项目已启动</p>
-    <a class="btn" th:href="@{/register}">前往注册</a>
+
+    <!-- 未登录：显示注册/登录入口 -->
+    <div th:if="${currentUser == null}" style="margin-top: 24px;">
+        <a class="btn" th:href="@{/register}">注册账号</a>
+        <a class="btn" th:href="@{/login}" style="margin-left: 12px;">立即登录</a>
+    </div>
+
+    <!-- 已登录：按角色显示不同入口 -->
+    <div th:if="${currentUser != null}" style="margin-top: 24px;">
+        <p>欢迎，<strong th:text="${currentUser.name}">用户</strong>
+            （<span th:text="${currentUser.roleName}">角色</span>）</p>
+
+        <a class="btn" th:if="${currentUser.teacher}" th:href="@{/teacher/home}">教师工作台</a>
+        <a class="btn" th:if="${currentUser.student}" th:href="@{/student/home}">学生首页</a>
+
+        <p style="margin-top: 16px;">
+            <a class="link" th:href="@{/logout}">退出登录</a>
+        </p>
+    </div>
 </div>
 </body>
 </html>

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>学生首页 - 校园活动管理系统</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="container center">
+    <h1>学生首页</h1>
+    <p class="muted">
+        欢迎，<span th:text="${currentUser.name}">同学</span>
+        （账号：<span th:text="${currentUser.username}">-</span>）
+    </p>
+
+    <div style="margin-top: 24px;">
+        <a class="btn" th:href="@{/activities}">浏览活动列表</a>
+        <a class="btn" th:href="@{/enrollments/my}">我的报名</a>
+    </div>
+
+    <p style="margin-top: 24px;">
+        <a class="link" th:href="@{/}">返回首页</a>
+        <a class="link" th:href="@{/logout}" style="margin-left: 16px;">退出登录</a>
+    </p>
+</div>
+</body>
+</html>
