@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>活动列表 - 校园活动管理系统</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .card { text-align: left; border: 1px solid #e3e3de; border-radius: 8px; padding: 16px; margin-bottom: 12px; background: #fff; }
+        .card h3 { margin-bottom: 6px; font-size: 16px; }
+        .meta { color: #5f5e5a; font-size: 13px; margin-bottom: 4px; }
+        .status { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+        .status-open { background: #e1f5ee; color: #085041; }
+        .status-closed { background: #f0f0f0; color: #5f5e5a; }
+        .status-cancelled { background: #fcebeb; color: #791f1f; }
+    </style>
+</head>
+<body>
+<div class="container" style="max-width: 720px;">
+    <h1>活动列表</h1>
+    <p class="muted">浏览校园活动（FR4）</p>
+
+    <div th:if="${#lists.isEmpty(activities)}" class="banner">
+        暂无活动，敬请期待。
+    </div>
+
+    <div th:each="act : ${activities}" class="card">
+        <h3>
+            <a th:href="@{/activities/{id}(id=${act.id})}" th:text="${act.title}">活动标题</a>
+        </h3>
+        <p class="meta">
+            <span th:text="${#temporals.format(act.activityTime, 'yyyy-MM-dd HH:mm')}">时间</span>
+            · <span th:text="${act.place}">地点</span>
+        </p>
+        <p class="meta">
+            容量：<span th:text="${act.capacity}">0</span> 人
+            <span class="status" th:classappend="${act.status.name() == 'OPEN'} ? 'status-open' : (${act.status.name() == 'CLOSED'} ? 'status-closed' : 'status-cancelled')"
+                  th:text="${act.status.name() == 'OPEN'} ? '报名中' : (${act.status.name() == 'CLOSED'} ? '已结束' : '已取消')">
+                状态
+            </span>
+        </p>
+    </div>
+
+    <p style="text-align:center; margin-top: 16px;">
+        <a class="link" th:href="@{/}">返回首页</a>
+    </p>
+</div>
+</body>
+</html>

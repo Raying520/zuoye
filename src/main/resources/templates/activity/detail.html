@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>活动详情 - 校园活动管理系统</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .detail-row { margin: 12px 0; font-size: 14px; }
+        .detail-label { color: #5f5e5a; display: inline-block; width: 80px; }
+        .status { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+        .status-open { background: #e1f5ee; color: #085041; }
+        .status-closed { background: #f0f0f0; color: #5f5e5a; }
+        .status-cancelled { background: #fcebeb; color: #791f1f; }
+    </style>
+</head>
+<body>
+<div class="container" style="max-width: 640px;">
+    <h1 th:text="${activity.title}">活动标题</h1>
+
+    <div class="detail-row">
+        <span class="detail-label">状态</span>
+        <span class="status" th:classappend="${activity.status.name() == 'OPEN'} ? 'status-open' : (${activity.status.name() == 'CLOSED'} ? 'status-closed' : 'status-cancelled')"
+              th:text="${activity.status.name() == 'OPEN'} ? '报名中' : (${activity.status.name() == 'CLOSED'} ? '已结束' : '已取消')">
+            状态
+        </span>
+    </div>
+
+    <div class="detail-row">
+        <span class="detail-label">活动时间</span>
+        <span th:text="${#temporals.format(activity.activityTime, 'yyyy-MM-dd HH:mm')}">时间</span>
+    </div>
+
+    <div class="detail-row">
+        <span class="detail-label">活动地点</span>
+        <span th:text="${activity.place}">地点</span>
+    </div>
+
+    <div class="detail-row">
+        <span class="detail-label">容量上限</span>
+        <span th:text="${activity.capacity} + ' 人'">0 人</span>
+    </div>
+
+    <div class="detail-row">
+        <span class="detail-label">活动简介</span>
+    </div>
+    <p th:text="${activity.description} ?: '暂无简介'" style="white-space: pre-wrap; line-height: 1.6;"></p>
+
+    <div style="margin-top: 24px; text-align: center;">
+        <a class="btn" th:href="@{/activities}">返回活动列表</a>
+    </div>
+</div>
+</body>
+</html>
