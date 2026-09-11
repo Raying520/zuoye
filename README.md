@@ -8,11 +8,14 @@ Java 17 · Spring Boot 3 · Thymeleaf · Spring Data JPA · H2 数据库 · Mave
 
 ## 如何运行
 
-1. 准备 JDK 17 及以上版本
-2. 运行方式二选一：
+1. 准备 JDK 17 及以上版本和 Maven 3.9+
+2. 运行方式三选一：
    - 用 IntelliJ IDEA 打开本项目（自动识别 pom.xml 并导入），运行 `CampusActivityApplication`
+   - Windows 双击 `start.bat`
    - 命令行执行 `mvn spring-boot:run`
 3. 浏览器访问 http://localhost:8080
+
+> 更详细的步骤、环境检查、常见问题见 `docs/本地运行指南.md`。
 
 数据保存在项目目录下的 `db/` 文件夹（已加入 .gitignore，不入库）；删除该文件夹后重启即可重置数据。
 
