@@ -21,7 +21,7 @@ Java 17 · Spring Boot 3 · Thymeleaf · Spring Data JPA · H2 数据库 · Mave
 - [x] M1 项目骨架：Spring Boot 启动、H2 配置、首页
 - [x] FR1 用户注册：表单校验、账号唯一、BCrypt 哈希
 - [x] FR2 登录与角色分流：Session 会话、登录拦截器、教师/学生主页分流
-- [ ] FR3 活动发布（待开发）
+- [x] FR3 活动发布：教师填写活动信息并保存，状态 = OPEN，容量 ≥ 1
 - [ ] FR4 活动浏览（待开发）
 - [ ] FR5 活动报名（待开发）
 - [ ] FR6 报名名单（待开发）

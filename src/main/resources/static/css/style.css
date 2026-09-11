@@ -23,13 +23,16 @@ h2 { font-size: 15px; font-weight: 500; color: #5f5e5a; margin-bottom: 20px; }
 
 label { display: block; font-size: 13px; margin: 12px 0 4px; }
 
-input, select {
+input, select, textarea {
     width: 100%;
     padding: 8px 10px;
     border: 1px solid #d3d1c7;
     border-radius: 6px;
     font-size: 14px;
+    font-family: inherit;
 }
+
+textarea { resize: vertical; }
 
 button, .btn {
     margin-top: 20px;

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>发布活动 - 校园活动管理系统</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="container">
+    <h1>发布活动</h1>
+    <p class="muted">教师专属功能（FR3）</p>
+
+    <div class="banner error" th:if="${bizError}" th:text="${bizError}"></div>
+
+    <form th:action="@{/activities}" th:object="${activityForm}" method="post">
+        <label for="title">活动标题</label>
+        <input type="text" id="title" th:field="*{title}" placeholder="例如：校园摄影大赛">
+        <p class="field-error" th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></p>
+
+        <label for="description">活动简介</label>
+        <textarea id="description" th:field="*{description}" rows="4" placeholder="活动内容、要求、注意事项等"></textarea>
+
+        <label for="activityTime">活动时间</label>
+        <input type="datetime-local" id="activityTime" th:field="*{activityTime}">
+        <p class="field-error" th:if="${#fields.hasErrors('activityTime')}" th:errors="*{activityTime}"></p>
+
+        <label for="place">活动地点</label>
+        <input type="text" id="place" th:field="*{place}" placeholder="例如：大学生活动中心 301">
+        <p class="field-error" th:if="${#fields.hasErrors('place')}" th:errors="*{place}"></p>
+
+        <label for="capacity">容量上限</label>
+        <input type="number" id="capacity" th:field="*{capacity}" min="1" placeholder="最多允许报名人数">
+        <p class="field-error" th:if="${#fields.hasErrors('capacity')}" th:errors="*{capacity}"></p>
+
+        <button type="submit">发 布</button>
+    </form>
+
+    <p style="text-align:center; margin-top:12px;">
+        <a class="link" th:href="@{/teacher/home}">返回教师工作台</a>
+    </p>
+</div>
+</body>
+</html>
