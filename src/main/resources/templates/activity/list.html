@@ -19,22 +19,22 @@
     <h1>活动列表</h1>
     <p class="muted">浏览校园活动（FR4）</p>
 
-    <div th:if="${#lists.isEmpty(activities)}" class="banner">
+    <div th:if="${#lists.isEmpty(items)}" class="banner">
         暂无活动，敬请期待。
     </div>
 
-    <div th:each="act : ${activities}" class="card">
+    <div th:each="item : ${items}" class="card">
         <h3>
-            <a th:href="@{/activities/{id}(id=${act.id})}" th:text="${act.title}">活动标题</a>
+            <a th:href="@{/activities/{id}(id=${item.activity.id})}" th:text="${item.activity.title}">活动标题</a>
         </h3>
         <p class="meta">
-            <span th:text="${#temporals.format(act.activityTime, 'yyyy-MM-dd HH:mm')}">时间</span>
-            · <span th:text="${act.place}">地点</span>
+            <span th:text="${#temporals.format(item.activity.activityTime, 'yyyy-MM-dd HH:mm')}">时间</span>
+            · <span th:text="${item.activity.place}">地点</span>
         </p>
         <p class="meta">
-            容量：<span th:text="${act.capacity}">0</span> 人
-            <span class="status" th:classappend="${act.status.name() == 'OPEN'} ? 'status-open' : (${act.status.name() == 'CLOSED'} ? 'status-closed' : 'status-cancelled')"
-                  th:text="${act.status.name() == 'OPEN'} ? '报名中' : (${act.status.name() == 'CLOSED'} ? '已结束' : '已取消')">
+            容量：<span th:text="${item.activity.capacity}">0</span> 人 · 已报：<span th:text="${item.enrolledCount}">0</span> 人
+            <span class="status" th:classappend="${item.activity.status.name() == 'OPEN'} ? 'status-open' : (${item.activity.status.name() == 'CLOSED'} ? 'status-closed' : 'status-cancelled')"
+                  th:text="${item.activity.status.name() == 'OPEN'} ? '报名中' : (${item.activity.status.name() == 'CLOSED'} ? '已结束' : '已取消')">
                 状态
             </span>
         </p>

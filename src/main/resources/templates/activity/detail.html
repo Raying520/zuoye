@@ -11,11 +11,17 @@
         .status-open { background: #e1f5ee; color: #085041; }
         .status-closed { background: #f0f0f0; color: #5f5e5a; }
         .status-cancelled { background: #fcebeb; color: #791f1f; }
+        .actions { margin-top: 24px; display: flex; gap: 12px; justify-content: center; }
+        .actions form { display: inline; }
+        .actions .btn-secondary { background: #888780; }
     </style>
 </head>
 <body>
 <div class="container" style="max-width: 640px;">
     <h1 th:text="${activity.title}">活动标题</h1>
+
+    <div class="banner success" th:if="${success}" th:text="${success}"></div>
+    <div class="banner error" th:if="${bizError}" th:text="${bizError}"></div>
 
     <div class="detail-row">
         <span class="detail-label">状态</span>
@@ -36,8 +42,8 @@
     </div>
 
     <div class="detail-row">
-        <span class="detail-label">容量上限</span>
-        <span th:text="${activity.capacity} + ' 人'">0 人</span>
+        <span class="detail-label">报名情况</span>
+        <span th:text="${enrolledCount} + ' / ' + ${activity.capacity} + ' 人'">0 / 0 人</span>
     </div>
 
     <div class="detail-row">
@@ -45,7 +51,26 @@
     </div>
     <p th:text="${activity.description} ?: '暂无简介'" style="white-space: pre-wrap; line-height: 1.6;"></p>
 
-    <div style="margin-top: 24px; text-align: center;">
+    <!-- 学生操作区：报名 / 取消报名（FR5） -->
+    <div class="actions" th:if="${currentUser != null and currentUser.student}">
+        <form th:if="${!isEnrolled and activity.status.name() == 'OPEN' and enrolledCount < activity.capacity}"
+              th:action="@{/enrollments}" method="post">
+            <input type="hidden" name="activityId" th:value="${activity.id}">
+            <button type="submit">立即报名</button>
+        </form>
+
+        <form th:if="${isEnrolled and activity.status.name() == 'OPEN'}"
+              th:action="@{/enrollments/cancel}" method="post">
+            <input type="hidden" name="activityId" th:value="${activity.id}">
+            <button type="submit" class="btn-secondary">取消报名</button>
+        </form>
+
+        <span th:if="${isEnrolled and activity.status.name() != 'OPEN'}" class="muted">已报名（活动已结束/取消，不可变更）</span>
+        <span th:if="${!isEnrolled and activity.status.name() != 'OPEN'}" class="muted">活动已结束或已取消</span>
+        <span th:if="${!isEnrolled and activity.status.name() == 'OPEN' and enrolledCount >= activity.capacity}" class="muted">名额已满</span>
+    </div>
+
+    <div class="actions">
         <a class="btn" th:href="@{/activities}">返回活动列表</a>
     </div>
 </div>
