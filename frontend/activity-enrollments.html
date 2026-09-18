@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>报名名单 - 校园活动管理系统</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>校园活动管理系统</h1>
+            <nav id="header-nav"></nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <h2>报名名单</h2>
+            <div id="activity-info" class="meta" style="margin-bottom: 16px;"></div>
+            <div id="enrollment-list"></div>
+            <div class="actions" style="margin-top: 20px;">
+                <a href="activity-manage.html" class="btn btn-outline">返回管理列表</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        function getParam(name) {
+            return new URLSearchParams(location.search).get(name);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = requireLogin('teacher');
+            if (!user) return;
+
+            const id = parseInt(getParam('id'));
+            const act = getActivityById(id);
+            if (!act) {
+                document.getElementById('enrollment-list').innerHTML = '<div class="empty">活动不存在</div>';
+                return;
+            }
+            if (act.teacherId !== user.id) {
+                document.getElementById('enrollment-list').innerHTML = '<div class="empty">无权查看该活动的报名名单</div>';
+                return;
+            }
+
+            document.getElementById('activity-info').innerHTML = `
+                活动：<strong>${act.title}</strong> ·
+                状态：<span class="status ${statusClass(act.status)}">${statusText(act.status)}</span> ·
+                已报人数：${act.enrolledCount}/${act.capacity}
+            `;
+
+            const list = getEnrollmentsByActivity(id);
+            const container = document.getElementById('enrollment-list');
+            if (list.length === 0) {
+                container.innerHTML = '<div class="empty">暂无学生报名</div>';
+                return;
+            }
+            container.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>序号</th>
+                            <th>姓名</th>
+                            <th>报名时间</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${list.map((e, idx) => `
+                            <tr>
+                                <td>${idx + 1}</td>
+                                <td>${e.userName}</td>
+                                <td>${formatDateTime(e.createTime)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        });
+    </script>
+</body>
+</html>

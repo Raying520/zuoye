@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>发布活动 - 校园活动管理系统</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>校园活动管理系统</h1>
+            <nav id="header-nav"></nav>
+        </div>
+    </header>
+
+    <div class="container" style="max-width: 600px;">
+        <div class="card">
+            <h2>发布新活动</h2>
+            <div id="alert-box" class="alert" style="display: none;"></div>
+            <form id="activity-form">
+                <div class="form-group">
+                    <label>活动标题</label>
+                    <input type="text" id="title" required placeholder="请输入活动标题">
+                </div>
+                <div class="form-group">
+                    <label>活动时间</label>
+                    <input type="datetime-local" id="activityTime" required>
+                </div>
+                <div class="form-group">
+                    <label>活动地点</label>
+                    <input type="text" id="place" required placeholder="请输入活动地点">
+                </div>
+                <div class="form-group">
+                    <label>活动容量（人）</label>
+                    <input type="number" id="capacity" min="1" required placeholder="至少 1 人">
+                </div>
+                <div class="form-group">
+                    <label>活动简介</label>
+                    <textarea id="description" rows="4" placeholder="请输入活动简介"></textarea>
+                </div>
+                <div class="actions">
+                    <button type="submit" class="btn btn-primary">发布活动</button>
+                    <a href="teacher-home.html" class="btn btn-outline">返回工作台</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = requireLogin('teacher');
+            if (!user) return;
+
+            document.getElementById('activity-form').addEventListener('submit', e => {
+                e.preventDefault();
+                const activity = {
+                    title: document.getElementById('title').value.trim(),
+                    activityTime: document.getElementById('activityTime').value,
+                    place: document.getElementById('place').value.trim(),
+                    capacity: parseInt(document.getElementById('capacity').value),
+                    description: document.getElementById('description').value.trim(),
+                    teacherId: user.id
+                };
+
+                if (!activity.title || !activity.activityTime || !activity.place) {
+                    showAlert('alert-box', '标题、时间、地点为必填项', 'error');
+                    return;
+                }
+                if (activity.capacity < 1) {
+                    showAlert('alert-box', '容量至少为 1', 'error');
+                    return;
+                }
+
+                createActivity(activity);
+                showAlert('alert-box', '活动发布成功', 'success');
+                setTimeout(() => window.location.href = 'teacher-home.html', 800);
+            });
+        });
+    </script>
+</body>
+</html>

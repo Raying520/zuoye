@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动管理 - 校园活动管理系统</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>校园活动管理系统</h1>
+            <nav id="header-nav"></nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <h2>管理我的活动</h2>
+            <div id="alert-box" class="alert" style="display: none;"></div>
+            <div id="manage-list" style="margin-top: 16px;"></div>
+        </div>
+    </div>
+
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = requireLogin('teacher');
+            if (!user) return;
+            render();
+
+            function render() {
+                const list = getActivitiesByTeacher(user.id);
+                const container = document.getElementById('manage-list');
+                if (list.length === 0) {
+                    container.innerHTML = '<div class="empty">您还没有发布过活动</div>';
+                    return;
+                }
+                container.innerHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>活动标题</th>
+                                <th>时间</th>
+                                <th>已报/容量</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${list.map(act => `
+                                <tr>
+                                    <td><a href="activity-detail.html?id=${act.id}">${act.title}</a></td>
+                                    <td>${formatDateTime(act.activityTime)}</td>
+                                    <td>${act.enrolledCount}/${act.capacity}</td>
+                                    <td><span class="status ${statusClass(act.status)}">${statusText(act.status)}</span></td>
+                                    <td>
+                                        <a href="activity-enrollments.html?id=${act.id}" class="btn btn-outline" style="padding: 4px 10px; font-size: 12px;">名单</a>
+                                        ${act.status === 'OPEN' ? `
+                                            <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px;" onclick="closeAct(${act.id})">结束</button>
+                                            <button class="btn btn-danger" style="padding: 4px 10px; font-size: 12px;" onclick="cancelAct(${act.id})">取消</button>
+                                        ` : ''}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            }
+
+            window.closeAct = function(id) {
+                if (!confirm('确定要结束该活动的报名吗？结束后学生将无法继续报名。')) return;
+                const result = updateActivityStatus(id, 'CLOSED', user.id);
+                showAlert('alert-box', result.message, result.success ? 'success' : 'error');
+                if (result.success) render();
+            };
+
+            window.cancelAct = function(id) {
+                if (!confirm('确定要取消该活动吗？取消后学生将无法报名。')) return;
+                const result = updateActivityStatus(id, 'CANCELLED', user.id);
+                showAlert('alert-box', result.message, result.success ? 'success' : 'error');
+                if (result.success) render();
+            };
+        });
+    </script>
+</body>
+</html>

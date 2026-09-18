@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教师工作台 - 校园活动管理系统</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>校园活动管理系统</h1>
+            <nav id="header-nav"></nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <h2>教师工作台</h2>
+            <p style="color: var(--text-light);">欢迎使用，您可以发布新活动、管理已发布活动并查看报名名单。</p>
+            <div class="actions">
+                <a href="activity-form.html" class="btn btn-primary">发布新活动</a>
+                <a href="activity-manage.html" class="btn btn-secondary">管理我的活动</a>
+                <a href="activities.html" class="btn btn-outline">浏览活动列表</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>我发布的活动</h3>
+            <div id="my-activities" class="activity-list"></div>
+        </div>
+    </div>
+
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = requireLogin('teacher');
+            if (!user) return;
+
+            const list = getActivitiesByTeacher(user.id);
+            const container = document.getElementById('my-activities');
+            if (list.length === 0) {
+                container.innerHTML = '<div class="empty">您还没有发布过活动</div>';
+                return;
+            }
+            container.innerHTML = list.map(act => `
+                <div class="activity-item">
+                    <h3><a href="activity-detail.html?id=${act.id}" style="color: var(--text); text-decoration: none;">${act.title}</a></h3>
+                    <div class="meta">
+                        时间：${formatDateTime(act.activityTime)} · 地点：${act.place}
+                        · 已报：${act.enrolledCount}/${act.capacity} 人
+                        <span class="status ${statusClass(act.status)}">${statusText(act.status)}</span>
+                    </div>
+                    <div class="actions">
+                        <a href="activity-enrollments.html?id=${act.id}" class="btn btn-outline">查看名单</a>
+                        ${act.status === 'OPEN'
+                            ? `<a href="activity-manage.html" class="btn btn-secondary">去管理</a>`
+                            : ''}
+                    </div>
+                </div>
+            `).join('');
+        });
+    </script>
+</body>
+</html>

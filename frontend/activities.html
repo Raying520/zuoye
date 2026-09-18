@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动列表 - 校园活动管理系统</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>校园活动管理系统</h1>
+            <nav id="header-nav"></nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <h2>活动列表</h2>
+            <p style="color: var(--text-light);">按举办时间倒序排列，点击标题查看详情。</p>
+            <div id="activity-list" class="activity-list" style="margin-top: 16px;"></div>
+        </div>
+    </div>
+
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            requireLogin();
+            const list = getAllActivities();
+            const container = document.getElementById('activity-list');
+            if (list.length === 0) {
+                container.innerHTML = '<div class="empty">暂无活动</div>';
+                return;
+            }
+            container.innerHTML = list.map(act => `
+                <div class="activity-item">
+                    <h3><a href="activity-detail.html?id=${act.id}" style="color: var(--text); text-decoration: none;">${act.title}</a></h3>
+                    <div class="meta">
+                        时间：${formatDateTime(act.activityTime)} · 地点：${act.place}
+                        · 已报：${act.enrolledCount}/${act.capacity} 人
+                        <span class="status ${statusClass(act.status)}">${statusText(act.status)}</span>
+                    </div>
+                    <p style="margin-top: 8px; font-size: 14px; color: var(--text-light);">
+                        ${act.description.length > 80 ? act.description.slice(0, 80) + '…' : act.description}
+                    </p>
+                </div>
+            `).join('');
+        });
+    </script>
+</body>
+</html>

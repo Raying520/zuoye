@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>校园活动管理系统 V1.0</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>校园活动管理系统 V1.0</h1>
+            <nav id="header-nav"></nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="card" style="text-align: center; padding: 60px 20px;">
+            <h2>欢迎使用校园活动管理系统</h2>
+            <p style="color: var(--text-light); margin: 12px 0 24px;">
+                教师可发布与管理活动，学生可浏览、报名并查看自己的参与记录。
+            </p>
+            <div id="guest-actions">
+                <a href="login.html" class="btn btn-primary">立即登录</a>
+                <a href="register.html" class="btn btn-outline">注册账号</a>
+            </div>
+            <div id="user-actions" style="display: none;">
+                <a id="home-link" href="#" class="btn btn-primary">进入工作台</a>
+                <a href="activities.html" class="btn btn-outline">浏览活动</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>系统功能</h3>
+            <div class="nav-cards">
+                <div class="nav-card">
+                    <h4>注册 / 登录</h4>
+                    <p>区分教师与学生角色，Session 会话管理</p>
+                </div>
+                <div class="nav-card">
+                    <h4>发布活动</h4>
+                    <p>教师填写活动信息、容量与举办时间</p>
+                </div>
+                <div class="nav-card">
+                    <h4>报名参与</h4>
+                    <p>学生浏览活动列表，受状态与容量约束</p>
+                </div>
+                <div class="nav-card">
+                    <h4>名单管理</h4>
+                    <p>教师查看报名名单、结束或取消活动</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">校园活动管理系统 V1.0 · 基于工程意图的软件迭代开发</div>
+    </footer>
+
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = getCurrentUser();
+            if (user) {
+                document.getElementById('guest-actions').style.display = 'none';
+                document.getElementById('user-actions').style.display = 'block';
+                document.getElementById('home-link').href = user.role === 'teacher'
+                    ? 'teacher-home.html' : 'student-home.html';
+            }
+        });
+    </script>
+</body>
+</html>

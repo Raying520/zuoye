@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的报名 - 校园活动管理系统</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>校园活动管理系统</h1>
+            <nav id="header-nav"></nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <h2>我的报名</h2>
+            <div id="alert-box" class="alert" style="display: none;"></div>
+            <div id="my-enrollments" class="activity-list" style="margin-top: 16px;"></div>
+        </div>
+    </div>
+
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = requireLogin('student');
+            if (!user) return;
+            render();
+
+            function render() {
+                // 直接从 db 读取报名记录并关联活动
+                const db = getDB();
+                const list = db.enrollments
+                    .filter(e => e.userId === user.id)
+                    .map(e => {
+                        const act = db.activities.find(a => a.id === e.activityId);
+                        return { ...e, activity: act };
+                    })
+                    .sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+
+                const container = document.getElementById('my-enrollments');
+                if (list.length === 0) {
+                    container.innerHTML = '<div class="empty">你还没有报名任何活动</div>';
+                    return;
+                }
+                container.innerHTML = list.map(item => {
+                    const act = item.activity;
+                    return `
+                        <div class="activity-item">
+                            <h3><a href="activity-detail.html?id=${act.id}" style="color: var(--text); text-decoration: none;">${act.title}</a></h3>
+                            <div class="meta">
+                                时间：${formatDateTime(act.activityTime)} · 地点：${act.place}
+                                <span class="status ${statusClass(act.status)}">${statusText(act.status)}</span>
+                            </div>
+                            <p style="margin-top: 8px; font-size: 13px; color: var(--text-light);">
+                                报名时间：${formatDateTime(item.createTime)}
+                            </p>
+                            ${act.status === 'OPEN' ? `
+                                <div class="actions">
+                                    <button class="btn btn-danger" onclick="cancelEnroll(${act.id})">取消报名</button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            window.cancelEnroll = function(activityId) {
+                const result = cancelEnrollment(activityId, user.id);
+                showAlert('alert-box', result.message, result.success ? 'success' : 'error');
+                if (result.success) render();
+            };
+        });
+    </script>
+</body>
+</html>

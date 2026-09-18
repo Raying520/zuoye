@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动详情 - 校园活动管理系统</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>校园活动管理系统</h1>
+            <nav id="header-nav"></nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <div id="alert-box" class="alert" style="display: none;"></div>
+            <div id="activity-detail"></div>
+            <div class="actions" id="student-actions" style="display: none;"></div>
+            <div class="actions" id="teacher-actions" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        function getParam(name) {
+            return new URLSearchParams(location.search).get(name);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = requireLogin();
+            if (!user) return;
+
+            const id = parseInt(getParam('id'));
+            const act = getActivityById(id);
+            if (!act) {
+                document.getElementById('activity-detail').innerHTML = '<div class="empty">活动不存在</div>';
+                return;
+            }
+
+            const teacher = findUserById(act.teacherId);
+            document.getElementById('activity-detail').innerHTML = `
+                <h2>${act.title}
+                    <span class="status ${statusClass(act.status)}">${statusText(act.status)}</span>
+                </h2>
+                <div class="meta" style="margin-bottom: 16px;">
+                    发布时间：${formatDateTime(act.createTime)} · 发布者：${teacher?.name || '未知'}
+                </div>
+                <p><strong>活动时间：</strong>${formatDateTime(act.activityTime)}</p>
+                <p><strong>活动地点：</strong>${act.place}</p>
+                <p><strong>活动容量：</strong>${act.capacity} 人</p>
+                <p><strong>已报人数：</strong>${act.enrolledCount} 人</p>
+                <p style="margin-top: 12px;">${act.description}</p>
+            `;
+
+            if (user.role === 'student') {
+                const isEnrolled = dbHasEnrollment(act.id, user.id);
+                const canEnroll = act.status === 'OPEN' && act.enrolledCount < act.capacity;
+                const container = document.getElementById('student-actions');
+                container.style.display = 'block';
+
+                if (act.status !== 'OPEN') {
+                    container.innerHTML = '<span class="btn" style="background: #e2e8f0; color: #4a5568; cursor: notallowed;">该活动当前不可报名</span>';
+                } else if (isEnrolled) {
+                    container.innerHTML = `
+                        <span class="btn btn-success">已报名</span>
+                        <button class="btn btn-danger" onclick="cancelMyEnrollment(${act.id})">取消报名</button>
+                    `;
+                } else if (!canEnroll) {
+                    container.innerHTML = '<span class="btn" style="background: #e2e8f0; color: #4a5568; cursor: not-allowed;">名额已满</span>';
+                } else {
+                    container.innerHTML = `<button class="btn btn-primary" onclick="enrollActivity(${act.id})">立即报名</button>`;
+                }
+            } else if (user.role === 'teacher' && act.teacherId === user.id) {
+                const container = document.getElementById('teacher-actions');
+                container.style.display = 'block';
+                container.innerHTML = `
+                    <a href="activity-enrollments.html?id=${act.id}" class="btn btn-outline">查看报名名单</a>
+                    <a href="activity-manage.html" class="btn btn-secondary">管理活动</a>
+                `;
+            }
+        });
+
+        function enrollActivity(activityId) {
+            const user = getCurrentUser();
+            const result = enroll(activityId, user.id);
+            showAlert('alert-box', result.message, result.success ? 'success' : 'error');
+            if (result.success) setTimeout(() => location.reload(), 600);
+        }
+
+        function cancelMyEnrollment(activityId) {
+            const user = getCurrentUser();
+            const result = cancelEnrollment(activityId, user.id);
+            showAlert('alert-box', result.message, result.success ? 'success' : 'error');
+            if (result.success) setTimeout(() => location.reload(), 600);
+        }
+    </script>
+</body>
+</html>
