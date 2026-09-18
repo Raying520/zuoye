@@ -30,6 +30,17 @@ Java 17 · Spring Boot 3 · Thymeleaf · Spring Data JPA · H2 数据库 · Mave
 - [x] FR6 报名名单查看：教师查看自己活动的报名学生名单
 - [x] FR7 活动管理：教师结束/取消自己发布的活动（BR5）
 - [x] M5 验证收尾：S1–S6 验证记录表、实验报告素材清单
+- [x] 纯前端演示版：`frontend/` 目录，HTML/CSS/JS 实现，无需后端即可运行
+
+## 纯前端快速体验
+
+如果暂时不想配置 Java 环境，可以直接打开 `frontend/index.html`：
+
+1. 进入 `frontend/` 文件夹
+2. 双击 `index.html`
+3. 用演示账号登录即可体验完整流程
+
+> 纯前端版本使用浏览器 `localStorage` 保存数据，关闭页面后数据不会丢失（同一浏览器内）。详见 `frontend/README.md`。
 
 ## 快速验证
 
