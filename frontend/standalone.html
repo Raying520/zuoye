@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>校园活动管理系统 V1.0</title>
+    <style>
+        :root {
+            --primary: #2c7a7b; --primary-dark: #285e61; --secondary: #ed8936;
+            --danger: #e53e3e; --success: #38a169; --bg: #f7fafc;
+            --card: #ffffff; --text: #2d3748; --text-light: #718096;
+            --border: #e2e8f0; --shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+        .container { max-width: 960px; margin: 0 auto; padding: 20px; }
+        header { background: var(--primary); color: #fff; padding: 14px 0; box-shadow: var(--shadow); }
+        header .container { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        header h1 { font-size: 20px; }
+        header nav a { color: #fff; text-decoration: none; margin-left: 18px; font-size: 14px; }
+        header nav a:hover { text-decoration: underline; }
+        .card { background: var(--card); border-radius: 10px; padding: 24px; margin: 20px 0; box-shadow: var(--shadow); }
+        h2 { font-size: 22px; margin-bottom: 16px; color: var(--primary-dark); }
+        h3 { font-size: 18px; margin: 20px 0 12px; }
+        .btn { display: inline-block; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; border: none; cursor: pointer; transition: opacity 0.2s; }
+        .btn:hover { opacity: 0.9; }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-secondary { background: var(--secondary); color: #fff; }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-success { background: var(--success); color: #fff; }
+        .btn-outline { background: #fff; color: var(--primary); border: 1px solid var(--primary); }
+        .btn:disabled { background: #e2e8f0; color: #718096; cursor: not-allowed; opacity: 1; }
+        .actions { margin-top: 16px; }
+        .actions .btn { margin-right: 10px; margin-bottom: 8px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); }
+        .help-text { font-size: 12px; color: var(--text-light); margin-top: 4px; }
+        .alert { padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; display: none; }
+        .alert-error { background: #fed7d7; color: #c53030; }
+        .alert-success { background: #c6f6d5; color: #276749; }
+        .activity-list { display: grid; gap: 16px; }
+        .activity-item { border: 1px solid var(--border); border-radius: 8px; padding: 16px; background: #fff; }
+        .activity-item h3 { margin: 0 0 8px; }
+        .meta { font-size: 13px; color: var(--text-light); margin-bottom: 10px; }
+        .status { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-left: 8px; }
+        .status-open { background: #c6f6d5; color: #276749; }
+        .status-closed { background: #e2e8f0; color: #4a5568; }
+        .status-cancelled { background: #fed7d7; color: #c53030; }
+        .empty { text-align: center; color: var(--text-light); padding: 40px 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        th, td { text-align: left; padding: 10px; border-bottom: 1px solid var(--border); }
+        th { background: #f7fafc; font-weight: 600; }
+        footer { text-align: center; color: var(--text-light); font-size: 12px; padding: 30px 0; }
+        .nav-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 16px; }
+        .nav-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; }
+        .nav-card:hover { border-color: var(--primary); box-shadow: var(--shadow); }
+        .nav-card h4 { color: var(--primary); margin-bottom: 6px; }
+        .nav-card p { font-size: 13px; color: var(--text-light); }
+        .hidden { display: none !important; }
+        .link { color: var(--primary); text-decoration: none; cursor: pointer; }
+        .link:hover { text-decoration: underline; }
+        @media (max-width: 600px) {
+            header h1 { font-size: 16px; }
+            header nav a { margin-left: 10px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1 onclick="go('home')" style="cursor:pointer;">校园活动管理系统 V1.0</h1>
+            <nav id="header-nav"></nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div id="alert-box" class="alert"></div>
+        <div id="app"></div>
+    </div>
+
+    <footer>
+        <div class="container">校园活动管理系统 V1.0 · 基于工程意图的软件迭代开发 · 单文件独立运行版</div>
+    </footer>
+
+<script>
+// ==================== 数据层 ====================
+const DB_KEY = 'campus_activity_db';
+
+function getDB() {
+    const raw = localStorage.getItem(DB_KEY);
+    if (raw) return JSON.parse(raw);
+    return initDB();
+}
+
+function initDB() {
+    const db = {
+        users: [
+            { id: 1, username: 'teacher01', password: '123456', name: '王老师', role: 'teacher' },
+            { id: 2, username: 'student01', password: '123456', name: '张同学', role: 'student' },
+            { id: 3, username: 'student02', password: '123456', name: '李同学', role: 'student' }
+        ],
+        activities: [
+            { id: 1, title: '校园编程马拉松', description: '面向全校学生的 24 小时编程挑战赛。', activityTime: '2026-09-25T09:00', place: '计算机楼 301', capacity: 30, status: 'OPEN', teacherId: 1, createTime: '2026-09-10T10:00' },
+            { id: 2, title: '迎新晚会彩排', description: '社团联合会迎新晚会第一次彩排。', activityTime: '2026-09-20T18:30', place: '大学生活动中心', capacity: 50, status: 'CLOSED', teacherId: 1, createTime: '2026-09-08T14:00' }
+        ],
+        enrollments: [{ id: 1, activityId: 1, userId: 2, createTime: '2026-09-11T09:30' }],
+        nextUserId: 4, nextActivityId: 3, nextEnrollmentId: 2
+    };
+    saveDB(db);
+    return db;
+}
+
+function saveDB(db) { localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+function findUserByUsername(username) { return getDB().users.find(u => u.username === username); }
+function findUserById(id) { return getDB().users.find(u => u.id === id); }
+
+function register(username, password, name, role) {
+    const db = getDB();
+    if (db.users.some(u => u.username === username)) return { success: false, message: '账号已存在' };
+    db.users.push({ id: db.nextUserId++, username, password, name, role });
+    saveDB(db);
+    return { success: true };
+}
+
+function login(username, password) {
+    const user = findUserByUsername(username);
+    if (!user || user.password !== password) return { success: false, message: '账号或密码错误' };
+    sessionStorage.setItem('currentUser', JSON.stringify(user));
+    return { success: true, user };
+}
+
+function logout() { sessionStorage.removeItem('currentUser'); }
+function getCurrentUser() { const raw = sessionStorage.getItem('currentUser'); return raw ? JSON.parse(raw) : null; }
+
+function getAllActivities() {
+    const db = getDB();
+    return db.activities.map(act => ({ ...act, enrolledCount: countEnrollmentsByActivity(act.id) }))
+        .sort((a, b) => new Date(b.activityTime) - new Date(a.activityTime));
+}
+function getActivityById(id) {
+    const act = getDB().activities.find(a => a.id === id);
+    return act ? { ...act, enrolledCount: countEnrollmentsByActivity(id) } : null;
+}
+function getActivitiesByTeacher(teacherId) { return getAllActivities().filter(a => a.teacherId === teacherId); }
+
+function createActivity(activity) {
+    const db = getDB();
+    const newAct = { id: db.nextActivityId++, ...activity, status: 'OPEN', createTime: new Date().toISOString() };
+    db.activities.push(newAct);
+    saveDB(db);
+    return newAct;
+}
+
+function updateActivityStatus(id, status, teacherId) {
+    const db = getDB();
+    const act = db.activities.find(a => a.id === id);
+    if (!act) return { success: false, message: '活动不存在' };
+    if (act.teacherId !== teacherId) return { success: false, message: '只能管理自己发布的活动' };
+    if (act.status !== 'OPEN') return { success: false, message: '活动当前状态不可更改' };
+    act.status = status;
+    saveDB(db);
+    return { success: true };
+}
+
+function getEnrollmentsByActivity(activityId) {
+    return getDB().enrollments.filter(e => e.activityId === activityId)
+        .map(e => ({ ...e, userName: findUserById(e.userId)?.name || '未知' }));
+}
+function countEnrollmentsByActivity(activityId) { return getDB().enrollments.filter(e => e.activityId === activityId).length; }
+function dbHasEnrollment(activityId, userId) { return getDB().enrollments.some(e => e.activityId === activityId && e.userId === userId); }
+
+function enroll(activityId, userId) {
+    const db = getDB();
+    const act = db.activities.find(a => a.id === activityId);
+    if (!act) return { success: false, message: '活动不存在' };
+    if (act.status !== 'OPEN') return { success: false, message: '该活动当前不可报名' };
+    if (countEnrollmentsByActivity(activityId) >= act.capacity) return { success: false, message: '活动名额已满' };
+    if (dbHasEnrollment(activityId, userId)) return { success: false, message: '你已经报名过该活动' };
+    db.enrollments.push({ id: db.nextEnrollmentId++, activityId, userId, createTime: new Date().toISOString() });
+    saveDB(db);
+    return { success: true };
+}
+
+function cancelEnrollment(activityId, userId) {
+    const db = getDB();
+    const act = db.activities.find(a => a.id === activityId);
+    if (!act) return { success: false, message: '活动不存在' };
+    if (act.status !== 'OPEN') return { success: false, message: '活动当前不可取消报名' };
+    const idx = db.enrollments.findIndex(e => e.activityId === activityId && e.userId === userId);
+    if (idx === -1) return { success: false, message: '你尚未报名该活动' };
+    db.enrollments.splice(idx, 1);
+    saveDB(db);
+    return { success: true };
+}
+
+function formatDateTime(iso) {
+    if (!iso) return '-';
+    const d = new Date(iso);
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function pad(n) { return n < 10 ? '0'+n : n; }
+function statusText(status) { return { OPEN: '报名中', CLOSED: '已结束', CANCELLED: '已取消' }[status] || status; }
+function statusClass(status) { return { OPEN: 'status-open', CLOSED: 'status-closed', CANCELLED: 'status-cancelled' }[status] || ''; }
+function resetData() { localStorage.removeItem(DB_KEY); initDB(); }
+
+// ==================== 路由与渲染 ====================
+
+function go(page, params = {}) {
+    let hash = '#' + page;
+    if (params.id !== undefined) hash += '?id=' + params.id;
+    location.hash = hash;
+}
+
+function getParam(name) {
+    return new URLSearchParams(location.hash.split('?')[1] || '').get(name);
+}
+
+function renderHeader() {
+    const user = getCurrentUser();
+    const header = document.getElementById('header-nav');
+    let html = '';
+    if (user) {
+        const roleName = user.role === 'teacher' ? '教师' : '学生';
+        html += `<span>${user.name}（${roleName}）</span>`;
+        html += `<a onclick="go('home')" class="link">工作台</a>`;
+        html += `<a onclick="go('activities')" class="link">活动列表</a>`;
+        html += `<a onclick="handleLogout()" class="link">退出登录</a>`;
+    } else {
+        html += `<a onclick="go('home')" class="link">首页</a>`;
+        html += `<a onclick="go('login')" class="link">登录</a>`;
+        html += `<a onclick="go('register')" class="link">注册</a>`;
+    }
+    header.innerHTML = html;
+}
+
+function handleLogout() { logout(); go('home'); }
+
+function requireLogin(role) {
+    const user = getCurrentUser();
+    if (!user) { showAlert('请先登录', 'error'); go('login'); return null; }
+    if (role && user.role !== role) { showAlert('无权访问该页面', 'error'); go('home'); return null; }
+    return user;
+}
+
+function showAlert(message, type) {
+    const el = document.getElementById('alert-box');
+    if (!message) { el.style.display = 'none'; return; }
+    el.className = 'alert alert-' + type;
+    el.textContent = message;
+    el.style.display = 'block';
+}
+
+// ==================== 页面模板 ====================
+
+const pages = {
+    home() {
+        const user = getCurrentUser();
+        if (!user) {
+            return `
+                <div class="card" style="text-align:center;padding:60px 20px;">
+                    <h2>欢迎使用校园活动管理系统</h2>
+                    <p style="color:var(--text-light);margin:12px 0 24px;">教师可发布与管理活动，学生可浏览、报名并查看参与记录。</p>
+                    <button class="btn btn-primary" onclick="go('login')">立即登录</button>
+                    <button class="btn btn-outline" onclick="go('register')">注册账号</button>
+                </div>
+                <div class="card">
+                    <h3>系统功能</h3>
+                    <div class="nav-cards">
+                        <div class="nav-card" onclick="go('login')"><h4>注册 / 登录</h4><p>区分教师与学生角色</p></div>
+                        <div class="nav-card" onclick="go('login')"><h4>发布活动</h4><p>教师填写活动信息</p></div>
+                        <div class="nav-card" onclick="go('login')"><h4>报名参与</h4><p>学生浏览并报名</p></div>
+                        <div class="nav-card" onclick="go('login')"><h4>名单管理</h4><p>教师查看与管理</p></div>
+                    </div>
+                </div>`;
+        }
+        if (user.role === 'teacher') {
+            const list = getActivitiesByTeacher(user.id).slice(0, 3);
+            return `
+                <div class="card">
+                    <h2>教师工作台</h2>
+                    <p style="color:var(--text-light);">欢迎 ${user.name}，您可以发布新活动、管理已发布活动并查看报名名单。</p>
+                    <div class="actions">
+                        <button class="btn btn-primary" onclick="go('activity-form')">发布新活动</button>
+                        <button class="btn btn-secondary" onclick="go('activity-manage')">管理我的活动</button>
+                        <button class="btn btn-outline" onclick="go('activities')">浏览活动列表</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>我发布的活动</h3>
+                    ${list.length ? list.map(act => activityItem(act, true)).join('') : '<div class="empty">暂无活动</div>'}
+                </div>`;
+        }
+        const list = getAllActivities().slice(0, 5);
+        return `
+            <div class="card">
+                <h2>学生工作台</h2>
+                <p style="color:var(--text-light);">欢迎 ${user.name}，浏览最新活动并管理你的报名记录。</p>
+                <div class="actions">
+                    <button class="btn btn-primary" onclick="go('activities')">浏览活动列表</button>
+                    <button class="btn btn-secondary" onclick="go('my-enrollments')">我的报名</button>
+                </div>
+            </div>
+            <div class="card">
+                <h3>最新活动</h3>
+                ${list.length ? list.map(act => activityItem(act)).join('') : '<div class="empty">暂无活动</div>'}
+            </div>`;
+    },
+
+    login() {
+        return `
+            <div class="card" style="max-width:420px;margin:40px auto;">
+                <h2>用户登录</h2>
+                <form onsubmit="submitLogin(event)">
+                    <div class="form-group"><label>账号</label><input type="text" id="username" required placeholder="请输入账号"></div>
+                    <div class="form-group"><label>密码</label><input type="password" id="password" required placeholder="请输入密码"></div>
+                    <button type="submit" class="btn btn-primary" style="width:100%;">登录</button>
+                </form>
+                <p style="text-align:center;margin-top:16px;font-size:14px;">还没有账号？<a onclick="go('register')" class="link">去注册</a></p>
+                <div class="help-text" style="margin-top:20px;">演示账号：<br>教师：teacher01 / 123456<br>学生：student01 / 123456</div>
+            </div>`;
+    },
+
+    register() {
+        return `
+            <div class="card" style="max-width:420px;margin:40px auto;">
+                <h2>注册账号</h2>
+                <form onsubmit="submitRegister(event)">
+                    <div class="form-group"><label>账号</label><input type="text" id="username" required placeholder="请设置登录账号"></div>
+                    <div class="form-group"><label>姓名</label><input type="text" id="name" required placeholder="请输入姓名"></div>
+                    <div class="form-group"><label>角色</label><select id="role" required><option value="">请选择角色</option><option value="student">学生</option><option value="teacher">教师</option></select></div>
+                    <div class="form-group"><label>密码</label><input type="password" id="password" required placeholder="请设置密码"></div>
+                    <div class="form-group"><label>确认密码</label><input type="password" id="password2" required placeholder="再次输入密码"></div>
+                    <button type="submit" class="btn btn-primary" style="width:100%;">注册</button>
+                </form>
+                <p style="text-align:center;margin-top:16px;font-size:14px;">已有账号？<a onclick="go('login')" class="link">去登录</a></p>
+            </div>`;
+    },
+
+    activities() {
+        requireLogin();
+        const list = getAllActivities();
+        return `
+            <div class="card">
+                <h2>活动列表</h2>
+                <p style="color:var(--text-light);">按举办时间倒序排列，点击查看详情。</p>
+                <div class="activity-list" style="margin-top:16px;">
+                    ${list.length ? list.map(act => activityItem(act)).join('') : '<div class="empty">暂无活动</div>'}
+                </div>
+            </div>`;
+    },
+
+    'activity-detail'() {
+        const user = requireLogin();
+        if (!user) return '';
+        const id = parseInt(getParam('id'));
+        const act = getActivityById(id);
+        if (!act) return `<div class="card"><div class="empty">活动不存在</div></div>`;
+        const teacher = findUserById(act.teacherId);
+        let actions = '';
+        if (user.role === 'student') {
+            const isEnrolled = dbHasEnrollment(act.id, user.id);
+            if (act.status !== 'OPEN') actions = `<button class="btn" disabled>该活动当前不可报名</button>`;
+            else if (isEnrolled) actions = `<button class="btn btn-success" disabled>已报名</button> <button class="btn btn-danger" onclick="cancelMyEnrollment(${act.id})">取消报名</button>`;
+            else if (act.enrolledCount >= act.capacity) actions = `<button class="btn" disabled>名额已满</button>`;
+            else actions = `<button class="btn btn-primary" onclick="enrollActivity(${act.id})">立即报名</button>`;
+        } else if (user.role === 'teacher' && act.teacherId === user.id) {
+            actions = `<button class="btn btn-outline" onclick="go('activity-enrollments',{id:${act.id}})">查看名单</button> <button class="btn btn-secondary" onclick="go('activity-manage')">管理活动</button>`;
+        }
+        return `
+            <div class="card">
+                <h2>${act.title} <span class="status ${statusClass(act.status)}">${statusText(act.status)}</span></h2>
+                <div class="meta" style="margin-bottom:16px;">发布时间：${formatDateTime(act.createTime)} · 发布者：${teacher?.name || '未知'}</div>
+                <p><strong>活动时间：</strong>${formatDateTime(act.activityTime)}</p>
+                <p><strong>活动地点：</strong>${act.place}</p>
+                <p><strong>活动容量：</strong>${act.capacity} 人</p>
+                <p><strong>已报人数：</strong>${act.enrolledCount} 人</p>
+                <p style="margin-top:12px;">${act.description}</p>
+                <div class="actions">${actions}</div>
+            </div>`;
+    },
+
+    'activity-form'() {
+        const user = requireLogin('teacher');
+        if (!user) return '';
+        return `
+            <div class="card" style="max-width:600px;">
+                <h2>发布新活动</h2>
+                <form onsubmit="submitActivity(event)">
+                    <div class="form-group"><label>活动标题</label><input type="text" id="title" required placeholder="请输入活动标题"></div>
+                    <div class="form-group"><label>活动时间</label><input type="datetime-local" id="activityTime" required></div>
+                    <div class="form-group"><label>活动地点</label><input type="text" id="place" required placeholder="请输入活动地点"></div>
+                    <div class="form-group"><label>活动容量（人）</label><input type="number" id="capacity" min="1" required placeholder="至少 1 人"></div>
+                    <div class="form-group"><label>活动简介</label><textarea id="description" rows="4" placeholder="请输入活动简介"></textarea></div>
+                    <div class="actions"><button type="submit" class="btn btn-primary">发布活动</button> <button type="button" class="btn btn-outline" onclick="go('home')">返回</button></div>
+                </form>
+            </div>`;
+    },
+
+    'activity-manage'() {
+        const user = requireLogin('teacher');
+        if (!user) return '';
+        const list = getActivitiesByTeacher(user.id);
+        return `
+            <div class="card">
+                <h2>管理我的活动</h2>
+                ${list.length ? `
+                    <table>
+                        <thead><tr><th>活动标题</th><th>时间</th><th>已报/容量</th><th>状态</th><th>操作</th></tr></thead>
+                        <tbody>
+                            ${list.map(act => `
+                                <tr>
+                                    <td><a onclick="go('activity-detail',{id:${act.id}})" class="link">${act.title}</a></td>
+                                    <td>${formatDateTime(act.activityTime)}</td>
+                                    <td>${act.enrolledCount}/${act.capacity}</td>
+                                    <td><span class="status ${statusClass(act.status)}">${statusText(act.status)}</span></td>
+                                    <td>
+                                        <button class="btn btn-outline" style="padding:4px 10px;font-size:12px;" onclick="go('activity-enrollments',{id:${act.id}})">名单</button>
+                                        ${act.status === 'OPEN' ? `
+                                            <button class="btn btn-secondary" style="padding:4px 10px;font-size:12px;" onclick="closeAct(${act.id})">结束</button>
+                                            <button class="btn btn-danger" style="padding:4px 10px;font-size:12px;" onclick="cancelAct(${act.id})">取消</button>
+                                        ` : ''}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                ` : '<div class="empty">您还没有发布过活动</div>'}
+            </div>`;
+    },
+
+    'activity-enrollments'() {
+        const user = requireLogin('teacher');
+        if (!user) return '';
+        const id = parseInt(getParam('id'));
+        const act = getActivityById(id);
+        if (!act) return `<div class="card"><div class="empty">活动不存在</div></div>`;
+        if (act.teacherId !== user.id) return `<div class="card"><div class="empty">无权查看该活动的报名名单</div></div>`;
+        const list = getEnrollmentsByActivity(id);
+        return `
+            <div class="card">
+                <h2>报名名单</h2>
+                <div class="meta" style="margin-bottom:16px;">活动：<strong>${act.title}</strong> · 状态：<span class="status ${statusClass(act.status)}">${statusText(act.status)}</span> · 已报人数：${act.enrolledCount}/${act.capacity}</div>
+                ${list.length ? `
+                    <table>
+                        <thead><tr><th>序号</th><th>姓名</th><th>报名时间</th></tr></thead>
+                        <tbody>${list.map((e, idx) => `<tr><td>${idx+1}</td><td>${e.userName}</td><td>${formatDateTime(e.createTime)}</td></tr>`).join('')}</tbody>
+                    </table>
+                ` : '<div class="empty">暂无学生报名</div>'}
+                <div class="actions" style="margin-top:20px;"><button class="btn btn-outline" onclick="go('activity-manage')">返回管理列表</button></div>
+            </div>`;
+    },
+
+    'my-enrollments'() {
+        const user = requireLogin('student');
+        if (!user) return '';
+        const db = getDB();
+        const list = db.enrollments.filter(e => e.userId === user.id)
+            .map(e => ({ ...e, activity: db.activities.find(a => a.id === e.activityId) }))
+            .sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+        return `
+            <div class="card">
+                <h2>我的报名</h2>
+                <div class="activity-list" style="margin-top:16px;">
+                    ${list.length ? list.map(item => {
+                        const act = item.activity;
+                        return `
+                            <div class="activity-item">
+                                <h3><a onclick="go('activity-detail',{id:${act.id}})" class="link">${act.title}</a></h3>
+                                <div class="meta">时间：${formatDateTime(act.activityTime)} · 地点：${act.place} <span class="status ${statusClass(act.status)}">${statusText(act.status)}</span></div>
+                                <p style="margin-top:8px;font-size:13px;color:var(--text-light);">报名时间：${formatDateTime(item.createTime)}</p>
+                                ${act.status === 'OPEN' ? `<div class="actions"><button class="btn btn-danger" onclick="cancelEnroll(${act.id})">取消报名</button></div>` : ''}
+                            </div>
+                        `;
+                    }).join('') : '<div class="empty">你还没有报名任何活动</div>'}
+                </div>
+            </div>`;
+    }
+};
+
+function activityItem(act, manage) {
+    return `
+        <div class="activity-item">
+            <h3><a onclick="go('activity-detail',{id:${act.id}})" class="link">${act.title}</a></h3>
+            <div class="meta">时间：${formatDateTime(act.activityTime)} · 地点：${act.place} · 已报：${act.enrolledCount}/${act.capacity} 人 <span class="status ${statusClass(act.status)}">${statusText(act.status)}</span></div>
+            <p style="margin-top:8px;font-size:14px;color:var(--text-light);">${act.description.length > 80 ? act.description.slice(0,80)+'…' : act.description}</p>
+            ${manage ? `<div class="actions"><button class="btn btn-outline" onclick="go('activity-enrollments',{id:${act.id}})">查看名单</button></div>` : ''}
+        </div>
+    `;
+}
+
+// ==================== 表单提交处理 ====================
+
+function submitLogin(e) {
+    e.preventDefault();
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    const result = login(username, password);
+    if (result.success) go('home');
+    else showAlert(result.message, 'error');
+}
+
+function submitRegister(e) {
+    e.preventDefault();
+    const username = document.getElementById('username').value.trim();
+    const name = document.getElementById('name').value.trim();
+    const role = document.getElementById('role').value;
+    const password = document.getElementById('password').value;
+    const password2 = document.getElementById('password2').value;
+    if (password !== password2) { showAlert('两次输入的密码不一致', 'error'); return; }
+    if (password.length < 6) { showAlert('密码长度不能少于 6 位', 'error'); return; }
+    const result = register(username, password, name, role);
+    if (result.success) {
+        showAlert('注册成功，请登录', 'success');
+        setTimeout(() => go('login'), 800);
+    } else showAlert(result.message, 'error');
+}
+
+function submitActivity(e) {
+    e.preventDefault();
+    const user = getCurrentUser();
+    const activity = {
+        title: document.getElementById('title').value.trim(),
+        activityTime: document.getElementById('activityTime').value,
+        place: document.getElementById('place').value.trim(),
+        capacity: parseInt(document.getElementById('capacity').value),
+        description: document.getElementById('description').value.trim(),
+        teacherId: user.id
+    };
+    if (!activity.title || !activity.activityTime || !activity.place) { showAlert('标题、时间、地点为必填项', 'error'); return; }
+    if (activity.capacity < 1) { showAlert('容量至少为 1', 'error'); return; }
+    createActivity(activity);
+    showAlert('活动发布成功', 'success');
+    setTimeout(() => go('home'), 800);
+}
+
+function enrollActivity(activityId) {
+    const user = getCurrentUser();
+    const result = enroll(activityId, user.id);
+    showAlert(result.message, result.success ? 'success' : 'error');
+    if (result.success) setTimeout(() => location.reload(), 600);
+}
+
+function cancelMyEnrollment(activityId) {
+    const user = getCurrentUser();
+    const result = cancelEnrollment(activityId, user.id);
+    showAlert(result.message, result.success ? 'success' : 'error');
+    if (result.success) setTimeout(() => location.reload(), 600);
+}
+
+function cancelEnroll(activityId) {
+    const user = getCurrentUser();
+    const result = cancelEnrollment(activityId, user.id);
+    showAlert(result.message, result.success ? 'success' : 'error');
+    if (result.success) setTimeout(() => render(), 600);
+}
+
+function closeAct(id) {
+    if (!confirm('确定要结束该活动的报名吗？')) return;
+    const user = getCurrentUser();
+    const result = updateActivityStatus(id, 'CLOSED', user.id);
+    showAlert(result.message, result.success ? 'success' : 'error');
+    if (result.success) render();
+}
+
+function cancelAct(id) {
+    if (!confirm('确定要取消该活动吗？')) return;
+    const user = getCurrentUser();
+    const result = updateActivityStatus(id, 'CANCELLED', user.id);
+    showAlert(result.message, result.success ? 'success' : 'error');
+    if (result.success) render();
+}
+
+// ==================== 主渲染 ====================
+
+function render() {
+    showAlert('', '');
+    renderHeader();
+    const hash = location.hash.slice(1) || 'home';
+    const page = hash.split('?')[0] || 'home';
+    const renderer = pages[page] || pages.home;
+    document.getElementById('app').innerHTML = renderer();
+}
+
+window.addEventListener('hashchange', render);
+window.addEventListener('DOMContentLoaded', render);
+</script>
+</body>
+</html>
