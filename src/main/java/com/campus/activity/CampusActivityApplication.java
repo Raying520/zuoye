@@ -1,7 +1,9 @@
 package com.campus.activity;
 
+import com.campus.activity.entity.Activity;
 import com.campus.activity.entity.Enrollment;
 import com.campus.activity.entity.User;
+import com.campus.activity.repository.ActivityRepository;
 import com.campus.activity.repository.EnrollmentRepository;
 import com.campus.activity.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
@@ -39,6 +41,36 @@ public class CampusActivityApplication {
                     e.setStatus(Enrollment.Status.APPROVED);
                 }
                 enrollmentRepository.saveAll(legacy);
+            }
+        };
+    }
+
+    /**
+     * V2 -> V3 数据兼容：旧用户缺少 status 字段时默认 ENABLED；
+     * 旧活动缺少 platform_status 字段时默认 NORMAL。
+     */
+    @Bean
+    CommandLineRunner migrateV2ToV3(UserRepository userRepository,
+                                    ActivityRepository activityRepository) {
+        return args -> {
+            List<User> legacyUsers = userRepository.findAll().stream()
+                    .filter(u -> u.getStatus() == null)
+                    .toList();
+            if (!legacyUsers.isEmpty()) {
+                for (User u : legacyUsers) {
+                    u.setStatus(User.Status.ENABLED);
+                }
+                userRepository.saveAll(legacyUsers);
+            }
+
+            List<Activity> legacyActivities = activityRepository.findAll().stream()
+                    .filter(a -> a.getPlatformStatus() == null)
+                    .toList();
+            if (!legacyActivities.isEmpty()) {
+                for (Activity a : legacyActivities) {
+                    a.setPlatformStatus(Activity.PlatformStatus.NORMAL);
+                }
+                activityRepository.saveAll(legacyActivities);
             }
         };
     }
