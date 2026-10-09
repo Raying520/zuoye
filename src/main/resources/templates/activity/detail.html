@@ -6,12 +6,8 @@
     <link rel="stylesheet" th:href="@{/css/style.css}">
     <style>
         .detail-row { margin: 12px 0; font-size: 14px; }
-        .detail-label { color: #5f5e5a; display: inline-block; width: 80px; }
-        .status { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
-        .status-open { background: #e1f5ee; color: #085041; }
-        .status-closed { background: #f0f0f0; color: #5f5e5a; }
-        .status-cancelled { background: #fcebeb; color: #791f1f; }
-        .actions { margin-top: 24px; display: flex; gap: 12px; justify-content: center; }
+        .detail-label { color: #5f5e5a; display: inline-block; width: 90px; }
+        .actions { margin-top: 24px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
         .actions form { display: inline; }
         .actions .btn-secondary { background: #888780; }
     </style>
@@ -42,32 +38,91 @@
     </div>
 
     <div class="detail-row">
-        <span class="detail-label">报名情况</span>
-        <span th:text="${enrolledCount} + ' / ' + ${activity.capacity} + ' 人'">0 / 0 人</span>
+        <span class="detail-label">报名截止</span>
+        <span th:text="${activity.registrationDeadline != null} ? ${#temporals.format(activity.registrationDeadline, 'yyyy-MM-dd HH:mm')} : '—'">截止</span>
+        <span th:if="${deadlinePassed}" class="status status-rejected">已截止</span>
     </div>
+
+    <div class="detail-row">
+        <span class="detail-label">报名情况</span>
+        <span th:text="${approvedCount} + ' / ' + ${activity.capacity} + ' 人已报名'">0 / 0 人</span>
+        <span th:if="${waitingCount > 0}" th:text="'，候补 ' + ${waitingCount} + ' 人'" class="muted"></span>
+    </div>
+
+    <div class="detail-row" th:if="${activity.requireAudit}">
+        <span class="detail-label">审核方式</span>
+        <span class="status status-pending">需要教师审核</span>
+    </div>
+
+    <div class="detail-row" th:if="${activity.allowWaitlist}">
+        <span class="detail-label">候补机制</span>
+        <span class="status status-waiting">满员后开放候补</span>
+    </div>
+
+    <div class="detail-row" th:if="${activity.requirements != null and !activity.requirements.isEmpty()}">
+        <span class="detail-label">参与条件</span>
+    </div>
+    <p th:if="${activity.requirements != null and !activity.requirements.isEmpty()}"
+       th:text="${activity.requirements}" style="white-space: pre-wrap; line-height: 1.6;"></p>
 
     <div class="detail-row">
         <span class="detail-label">活动简介</span>
     </div>
     <p th:text="${activity.description} ?: '暂无简介'" style="white-space: pre-wrap; line-height: 1.6;"></p>
 
-    <!-- 学生操作区：报名 / 取消报名（FR5） -->
+    <!-- 学生操作区：报名 / 取消 / 状态可见（FR5、FR12、FR14） -->
     <div class="actions" th:if="${currentUser != null and currentUser.student}">
-        <form th:if="${!isEnrolled and activity.status.name() == 'OPEN' and enrolledCount < activity.capacity}"
-              th:action="@{/enrollments}" method="post">
-            <input type="hidden" name="activityId" th:value="${activity.id}">
-            <button type="submit">立即报名</button>
-        </form>
+        <!-- 尚未报名 -->
+        <th:block th:if="${myEnrollment == null}">
+            <form th:if="${activity.status.name() == 'OPEN' and !deadlinePassed and approvedCount < activity.capacity and !activity.requireAudit}"
+                  th:action="@{/enrollments}" method="post">
+                <input type="hidden" name="activityId" th:value="${activity.id}">
+                <button type="submit">立即报名</button>
+            </form>
 
-        <form th:if="${isEnrolled and activity.status.name() == 'OPEN'}"
-              th:action="@{/enrollments/cancel}" method="post">
-            <input type="hidden" name="activityId" th:value="${activity.id}">
-            <button type="submit" class="btn-secondary">取消报名</button>
-        </form>
+            <form th:if="${activity.status.name() == 'OPEN' and !deadlinePassed and activity.requireAudit}"
+                  th:action="@{/enrollments}" method="post">
+                <input type="hidden" name="activityId" th:value="${activity.id}">
+                <button type="submit">提交报名申请</button>
+            </form>
 
-        <span th:if="${isEnrolled and activity.status.name() != 'OPEN'}" class="muted">已报名（活动已结束/取消，不可变更）</span>
-        <span th:if="${!isEnrolled and activity.status.name() != 'OPEN'}" class="muted">活动已结束或已取消</span>
-        <span th:if="${!isEnrolled and activity.status.name() == 'OPEN' and enrolledCount >= activity.capacity}" class="muted">名额已满</span>
+            <form th:if="${activity.status.name() == 'OPEN' and !deadlinePassed and approvedCount >= activity.capacity and activity.allowWaitlist and !activity.requireAudit}"
+                  th:action="@{/enrollments}" method="post">
+                <input type="hidden" name="activityId" th:value="${activity.id}">
+                <button type="submit" class="btn-secondary">候补报名</button>
+            </form>
+
+            <span th:if="${activity.status.name() != 'OPEN'}" class="muted">活动已结束或已取消</span>
+            <span th:if="${deadlinePassed and activity.status.name() == 'OPEN'}" class="muted">报名已截止</span>
+            <span th:if="${activity.status.name() == 'OPEN' and !deadlinePassed and approvedCount >= activity.capacity and !activity.allowWaitlist}" class="muted">名额已满</span>
+        </th:block>
+
+        <!-- 已存在报名记录 -->
+        <th:block th:if="${myEnrollment != null}">
+            <span th:if="${myEnrollment.status.name() == 'APPROVED'}" class="status status-open">已报名</span>
+            <span th:if="${myEnrollment.status.name() == 'PENDING'}" class="status status-pending">审核中</span>
+            <span th:if="${myEnrollment.status.name() == 'WAITING'}" class="status status-waiting"
+                  th:text="'候补第 ' + ${myEnrollment.waitingNo} + ' 位'">候补</span>
+            <span th:if="${myEnrollment.status.name() == 'REJECTED'}" class="status status-rejected">未通过审核</span>
+
+            <form th:if="${activity.status.name() == 'OPEN' and myEnrollment.status.name() != 'REJECTED'}"
+                  th:action="@{/enrollments/cancel}" method="post">
+                <input type="hidden" name="activityId" th:value="${activity.id}">
+                <button type="submit" class="btn-secondary">取消报名</button>
+            </form>
+
+            <form th:if="${myEnrollment.status.name() == 'REJECTED' and activity.status.name() == 'OPEN' and !deadlinePassed}"
+                  th:action="@{/enrollments}" method="post">
+                <input type="hidden" name="activityId" th:value="${activity.id}">
+                <button type="submit" class="btn-secondary">重新报名</button>
+            </form>
+        </th:block>
+    </div>
+
+    <!-- 教师操作区 -->
+    <div class="actions" th:if="${currentUser != null and currentUser.teacher and activity.teacherId == currentUser.id}">
+        <a class="btn" th:href="@{/activities/{id}/enrollments(id=${activity.id})}">查看名单</a>
+        <a class="btn btn-secondary" th:if="${activity.status.name() == 'OPEN'}" th:href="@{/activities/{id}/edit(id=${activity.id})}">编辑活动</a>
     </div>
 
     <div class="actions">

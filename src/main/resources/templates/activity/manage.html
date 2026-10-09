@@ -38,7 +38,9 @@
             · <span th:text="${item.activity.place}">地点</span>
         </p>
         <p class="meta">
-            容量：<span th:text="${item.activity.capacity}">0</span> 人 · 已报：<span th:text="${item.enrolledCount}">0</span> 人
+            容量：<span th:text="${item.activity.capacity}">0</span> 人
+            · 已通过：<span th:text="${item.enrolledCount}">0</span> 人
+            <span th:if="${item.waitingCount > 0}" th:text="'· 候补 ' + ${item.waitingCount} + ' 人'"></span>
             <span class="status" th:classappend="${item.activity.status.name() == 'OPEN'} ? 'status-open' : (${item.activity.status.name() == 'CLOSED'} ? 'status-closed' : 'status-cancelled')"
                   th:text="${item.activity.status.name() == 'OPEN'} ? '报名中' : (${item.activity.status.name() == 'CLOSED'} ? '已结束' : '已取消')">
                 状态
@@ -47,6 +49,7 @@
 
         <div class="actions" th:if="${item.activity.status.name() == 'OPEN'}">
             <a class="btn" th:href="@{/activities/{id}/enrollments(id=${item.activity.id})}" style="width:auto; padding:6px 12px; font-size:12px;">查看名单</a>
+            <a class="btn" th:href="@{/activities/{id}/edit(id=${item.activity.id})}" style="width:auto; padding:6px 12px; font-size:12px; background:#5f5e5a;">编辑</a>
             <form th:action="@{/activities/{id}/close(id=${item.activity.id})}" method="post">
                 <button type="submit" class="btn-secondary">结束报名</button>
             </form>

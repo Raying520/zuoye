@@ -42,6 +42,22 @@ public class Activity {
     @Column(nullable = false)
     private Integer capacity;
 
+    /** 参与条件说明（FR8） */
+    @Column(name = "requirements", length = 2000)
+    private String requirements;
+
+    /** 报名截止时间（FR15） */
+    @Column(name = "registration_deadline")
+    private LocalDateTime registrationDeadline;
+
+    /** 是否需要教师审核（FR9） */
+    @Column(name = "require_audit", nullable = false)
+    private Boolean requireAudit = false;
+
+    /** 是否允许候补（FR10/FR11） */
+    @Column(name = "allow_waitlist", nullable = false)
+    private Boolean allowWaitlist = false;
+
     /** 活动状态：OPEN/CLOSED/CANCELLED */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -74,6 +90,18 @@ public class Activity {
 
     public Integer getCapacity() { return capacity; }
     public void setCapacity(Integer capacity) { this.capacity = capacity; }
+
+    public String getRequirements() { return requirements; }
+    public void setRequirements(String requirements) { this.requirements = requirements; }
+
+    public LocalDateTime getRegistrationDeadline() { return registrationDeadline; }
+    public void setRegistrationDeadline(LocalDateTime registrationDeadline) { this.registrationDeadline = registrationDeadline; }
+
+    public Boolean getRequireAudit() { return requireAudit; }
+    public void setRequireAudit(Boolean requireAudit) { this.requireAudit = requireAudit; }
+
+    public Boolean getAllowWaitlist() { return allowWaitlist; }
+    public void setAllowWaitlist(Boolean allowWaitlist) { this.allowWaitlist = allowWaitlist; }
 
     public Status getStatus() { return status; }
     public void setStatus(Status status) { this.status = status; }

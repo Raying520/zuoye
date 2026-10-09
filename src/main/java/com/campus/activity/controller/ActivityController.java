@@ -2,6 +2,8 @@ package com.campus.activity.controller;
 
 import com.campus.activity.dto.ActivityForm;
 import com.campus.activity.dto.UserSession;
+import com.campus.activity.entity.Activity;
+import com.campus.activity.entity.Enrollment;
 import com.campus.activity.interceptor.LoginInterceptor;
 import com.campus.activity.service.ActivityService;
 import com.campus.activity.service.EnrollmentService;
@@ -17,8 +19,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.LocalDateTime;
+import java.util.Optional;
+
 /**
- * 活动控制器（FR3 发布、FR4 浏览、FR7 管理）
+ * 活动控制器（FR3 发布、FR4 浏览、FR7 管理、FR13 编辑）
  */
 @Controller
 @RequestMapping("/activities")
@@ -44,6 +49,7 @@ public class ActivityController {
             model.addAttribute("bizError", "只有教师可以发布活动");
             return "login";
         }
+        model.addAttribute("edit", false);
         return "activity/form";
     }
 
@@ -59,15 +65,84 @@ public class ActivityController {
             return "login";
         }
         if (bindingResult.hasErrors()) {
+            model.addAttribute("edit", false);
             return "activity/form";
         }
         try {
             activityService.publish(form, user);
         } catch (IllegalArgumentException e) {
             model.addAttribute("bizError", e.getMessage());
+            model.addAttribute("edit", false);
             return "activity/form";
         }
         return "redirect:/teacher/home";
+    }
+
+    /** 编辑活动页面（FR13，仅教师、仅 OPEN） */
+    @GetMapping("/{id}/edit")
+    public String editForm(@PathVariable Long id,
+                           HttpSession session,
+                           Model model) {
+        UserSession user = currentUser(session);
+        Activity activity = activityService.findById(id);
+        if (activity == null || user == null || !user.isTeacher()
+                || !activity.getTeacherId().equals(user.getId())) {
+            model.addAttribute("bizError", "无权编辑该活动");
+            return "login";
+        }
+        if (activity.getStatus() != Activity.Status.OPEN) {
+            model.addAttribute("bizError", "活动当前状态不可编辑");
+            model.addAttribute("activity", activity);
+            return "activity/detail";
+        }
+
+        ActivityForm form = new ActivityForm();
+        form.setTitle(activity.getTitle());
+        form.setDescription(activity.getDescription());
+        form.setActivityTime(activity.getActivityTime());
+        form.setPlace(activity.getPlace());
+        form.setCapacity(activity.getCapacity());
+        form.setRequirements(activity.getRequirements());
+        form.setRegistrationDeadline(activity.getRegistrationDeadline());
+        form.setRequireAudit(activity.getRequireAudit());
+        form.setAllowWaitlist(activity.getAllowWaitlist());
+        model.addAttribute("activityForm", form);
+        model.addAttribute("activity", activity);
+        model.addAttribute("edit", true);
+        return "activity/form";
+    }
+
+    /** 提交编辑活动（FR13） */
+    @PostMapping("/{id}/edit")
+    public String update(@PathVariable Long id,
+                         @Valid ActivityForm form,
+                         BindingResult bindingResult,
+                         HttpSession session,
+                         Model model) {
+        UserSession user = currentUser(session);
+        if (user == null || !user.isTeacher()) {
+            model.addAttribute("bizError", "只有教师可以编辑活动");
+            return "login";
+        }
+        Activity activity = activityService.findById(id);
+        if (activity == null || !activity.getTeacherId().equals(user.getId())) {
+            model.addAttribute("bizError", "无权编辑该活动");
+            return "login";
+        }
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("activity", activity);
+            model.addAttribute("edit", true);
+            return "activity/form";
+        }
+        try {
+            activityService.update(id, form, user);
+        } catch (IllegalArgumentException e) {
+            model.addAttribute("bizError", e.getMessage());
+            model.addAttribute("activity", activity);
+            model.addAttribute("edit", true);
+            return "activity/form";
+        }
+        return "redirect:/activities/manage";
     }
 
     /** 活动列表（FR4，登录用户均可浏览） */
@@ -77,24 +152,25 @@ public class ActivityController {
         return "activity/list";
     }
 
-    /** 活动详情（FR4 + FR5 报名入口） */
+    /** 活动详情（FR4 + FR5 报名入口 + FR12/FR14 状态可见） */
     @GetMapping("/{id}")
     public String detail(@PathVariable Long id,
                          HttpSession session,
                          Model model) {
-        var activity = activityService.findById(id);
+        Activity activity = activityService.findById(id);
         if (activity == null) {
             return "redirect:/activities";
         }
         model.addAttribute("activity", activity);
-
-        long enrolledCount = enrollmentService.countByActivity(id);
-        model.addAttribute("enrolledCount", enrolledCount);
+        model.addAttribute("approvedCount", enrollmentService.approvedCount(id));
+        model.addAttribute("waitingCount", enrollmentService.waitingCount(id));
+        model.addAttribute("deadlinePassed", LocalDateTime.now().isAfter(activity.getRegistrationDeadline()));
 
         UserSession user = currentUser(session);
         if (user != null && user.isStudent()) {
             model.addAttribute("currentUser", user);
-            model.addAttribute("isEnrolled", enrollmentService.isEnrolled(id, user.getId()));
+            Optional<Enrollment> myEnrollment = enrollmentService.findByActivityAndUser(id, user.getId());
+            model.addAttribute("myEnrollment", myEnrollment.orElse(null));
         }
         return "activity/detail";
     }
@@ -155,7 +231,7 @@ public class ActivityController {
                               HttpSession session,
                               Model model) {
         UserSession user = currentUser(session);
-        var activity = activityService.findById(id);
+        Activity activity = activityService.findById(id);
         if (activity == null || user == null || !user.isTeacher()
                 || !activity.getTeacherId().equals(user.getId())) {
             model.addAttribute("bizError", "无权查看该活动的报名名单");
@@ -167,6 +243,8 @@ public class ActivityController {
         model.addAttribute("activity", activity);
         model.addAttribute("enrollments", enrollmentList);
         model.addAttribute("names", names);
+        model.addAttribute("approvedCount", enrollmentService.approvedCount(id));
+        model.addAttribute("waitingCount", enrollmentService.waitingCount(id));
         return "activity/enrollments";
     }
 

@@ -28,6 +28,16 @@ public class ActivityForm {
     @Min(value = 1, message = "容量上限至少为 1")
     private Integer capacity;
 
+    private String requirements;
+
+    @NotNull(message = "报名截止时间不能为空")
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm")
+    private LocalDateTime registrationDeadline;
+
+    private Boolean requireAudit;
+
+    private Boolean allowWaitlist;
+
     // --- getters & setters ---
 
     public String getTitle() { return title; }
@@ -44,4 +54,16 @@ public class ActivityForm {
 
     public Integer getCapacity() { return capacity; }
     public void setCapacity(Integer capacity) { this.capacity = capacity; }
+
+    public String getRequirements() { return requirements; }
+    public void setRequirements(String requirements) { this.requirements = requirements; }
+
+    public LocalDateTime getRegistrationDeadline() { return registrationDeadline; }
+    public void setRegistrationDeadline(LocalDateTime registrationDeadline) { this.registrationDeadline = registrationDeadline; }
+
+    public Boolean getRequireAudit() { return requireAudit; }
+    public void setRequireAudit(Boolean requireAudit) { this.requireAudit = requireAudit; }
+
+    public Boolean getAllowWaitlist() { return allowWaitlist; }
+    public void setAllowWaitlist(Boolean allowWaitlist) { this.allowWaitlist = allowWaitlist; }
 }

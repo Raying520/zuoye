@@ -9,6 +9,9 @@
         th, td { padding: 10px; border-bottom: 1px solid #e3e3de; text-align: left; }
         th { color: #5f5e5a; font-weight: 500; }
         .empty { text-align: center; color: #888780; padding: 24px; }
+        .actions { margin-top: 24px; display: flex; gap: 12px; justify-content: center; }
+        .actions form { display: inline; }
+        .actions .btn { width: auto; margin-top: 0; padding: 4px 10px; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -16,22 +19,49 @@
     <h1>报名名单</h1>
     <p class="muted">
         活动：<strong th:text="${activity.title}">活动标题</strong>
-        · 共 <strong th:text="${#lists.size(enrollments)}">0</strong> 人报名
+        · 已通过：<strong th:text="${approvedCount}">0</strong> 人
+        · 待审核：<strong th:text="${#lists.size(enrollments.?[status.name() == 'PENDING'])}">0</strong> 人
+        · 候补：<strong th:text="${waitingCount}">0</strong> 人
     </p>
+
+    <div class="banner success" th:if="${success}" th:text="${success}"></div>
+    <div class="banner error" th:if="${bizError}" th:text="${bizError}"></div>
 
     <table th:if="${!#lists.isEmpty(enrollments)}">
         <thead>
         <tr>
             <th>序号</th>
             <th>姓名</th>
+            <th>状态</th>
             <th>报名时间</th>
+            <th th:if="${activity.status.name() == 'OPEN'}" style="width: 160px;">操作</th>
         </tr>
         </thead>
         <tbody>
         <tr th:each="e, iter : ${enrollments}">
             <td th:text="${iter.index + 1}">1</td>
             <td th:text="${names.get(e.userId)}">姓名</td>
+            <td>
+                <span th:switch="${e.status.name()}"
+                      th:class="'status status-' + ${#strings.toLowerCase(e.status.name())}">
+                    <span th:case="'PENDING'" class="status status-pending">审核中</span>
+                    <span th:case="'APPROVED'" class="status status-open">已通过</span>
+                    <span th:case="'REJECTED'" class="status status-rejected">已拒绝</span>
+                    <span th:case="'WAITING'" class="status status-waiting"
+                          th:text="'候补第 ' + ${e.waitingNo} + ' 位'">候补</span>
+                </span>
+            </td>
             <td th:text="${#temporals.format(e.createTime, 'yyyy-MM-dd HH:mm')}">时间</td>
+            <td th:if="${activity.status.name() == 'OPEN'}">
+                <th:block th:if="${e.status.name() == 'PENDING'}">
+                    <form th:action="@{/enrollments/{id}/approve(id=${e.id})}" method="post" style="display:inline;">
+                        <button type="submit" class="btn btn-success">通过</button>
+                    </form>
+                    <form th:action="@{/enrollments/{id}/reject(id=${e.id})}" method="post" style="display:inline;">
+                        <button type="submit" class="btn btn-danger">拒绝</button>
+                    </form>
+                </th:block>
+            </td>
         </tr>
         </tbody>
     </table>

@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -19,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 报名控制器（FR5 报名/取消、FR6 名单查看）
+ * 报名控制器（FR5 报名/取消、FR6 名单查看、FR9 审核）
  */
 @Controller
 @RequestMapping("/enrollments")
@@ -62,6 +63,44 @@ public class EnrollmentController {
             redirectAttributes.addFlashAttribute("bizError", e.getMessage());
         }
         return "redirect:/activities/" + activityId;
+    }
+
+    /** 教师：审核通过（FR9） */
+    @PostMapping("/{id}/approve")
+    public String approve(@PathVariable Long id,
+                          HttpSession session,
+                          RedirectAttributes redirectAttributes) {
+        UserSession user = currentUser(session);
+        try {
+            enrollmentService.approve(id, user);
+            redirectAttributes.addFlashAttribute("success", "已通过报名审核");
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("bizError", e.getMessage());
+        }
+        return redirectToEnrollments(id);
+    }
+
+    /** 教师：审核拒绝（FR9） */
+    @PostMapping("/{id}/reject")
+    public String reject(@PathVariable Long id,
+                         HttpSession session,
+                         RedirectAttributes redirectAttributes) {
+        UserSession user = currentUser(session);
+        try {
+            enrollmentService.reject(id, user);
+            redirectAttributes.addFlashAttribute("success", "已拒绝报名");
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("bizError", e.getMessage());
+        }
+        return redirectToEnrollments(id);
+    }
+
+    private String redirectToEnrollments(Long enrollmentId) {
+        Enrollment enrollment = enrollmentService.findByIdHelper(enrollmentId);
+        if (enrollment == null) {
+            return "redirect:/activities/manage";
+        }
+        return "redirect:/activities/" + enrollment.getActivityId() + "/enrollments";
     }
 
     /** 我的报名（FR6，学生视角） */

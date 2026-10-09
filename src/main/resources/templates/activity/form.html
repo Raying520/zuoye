@@ -2,17 +2,18 @@
 <html xmlns:th="http://www.thymeleaf.org" lang="zh">
 <head>
     <meta charset="UTF-8">
-    <title>发布活动 - 校园活动管理系统</title>
+    <title th:text="${edit} ? '编辑活动' : '发布活动'">发布活动 - 校园活动管理系统</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
 <div class="container">
-    <h1>发布活动</h1>
-    <p class="muted">教师专属功能（FR3）</p>
+    <h1 th:text="${edit} ? '编辑活动' : '发布活动'">发布活动</h1>
+    <p class="muted" th:text="${edit} ? '教师专属功能（FR13）' : '教师专属功能（FR3）'">教师专属功能</p>
 
     <div class="banner error" th:if="${bizError}" th:text="${bizError}"></div>
 
-    <form th:action="@{/activities}" th:object="${activityForm}" method="post">
+    <form th:action="${edit} ? @{/activities/{id}/edit(id=${activity.id})} : @{/activities}"
+          th:object="${activityForm}" method="post">
         <label for="title">活动标题</label>
         <input type="text" id="title" th:field="*{title}" placeholder="例如：校园摄影大赛">
         <p class="field-error" th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></p>
@@ -32,7 +33,25 @@
         <input type="number" id="capacity" th:field="*{capacity}" min="1" placeholder="最多允许报名人数">
         <p class="field-error" th:if="${#fields.hasErrors('capacity')}" th:errors="*{capacity}"></p>
 
-        <button type="submit">发 布</button>
+        <label for="requirements">参与条件说明（FR8）</label>
+        <textarea id="requirements" th:field="*{requirements}" rows="3"
+                  placeholder="例如：仅限大一新生、需要自带电脑、有摄影基础优先等"></textarea>
+
+        <label for="registrationDeadline">报名截止时间（FR15）</label>
+        <input type="datetime-local" id="registrationDeadline" th:field="*{registrationDeadline}">
+        <p class="field-error" th:if="${#fields.hasErrors('registrationDeadline')}" th:errors="*{registrationDeadline}"></p>
+
+        <div class="form-check">
+            <input type="checkbox" id="requireAudit" th:field="*{requireAudit}">
+            <label for="requireAudit">需要教师审核（FR9）</label>
+        </div>
+
+        <div class="form-check">
+            <input type="checkbox" id="allowWaitlist" th:field="*{allowWaitlist}">
+            <label for="allowWaitlist">允许候补报名（FR10/FR11）</label>
+        </div>
+
+        <button type="submit" th:text="${edit} ? '保 存' : '发 布'">发 布</button>
     </form>
 
     <p style="text-align:center; margin-top:12px;">

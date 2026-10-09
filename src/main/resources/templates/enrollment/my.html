@@ -32,6 +32,12 @@
         </p>
         <p class="meta">
             报名时间：<span th:text="${#temporals.format(item.enrollment.createTime, 'yyyy-MM-dd HH:mm')}">-</span>
+            · 状态：
+            <span th:if="${item.enrollment.status.name() == 'APPROVED'}" class="status status-open">已报名</span>
+            <span th:if="${item.enrollment.status.name() == 'PENDING'}" class="status status-pending">审核中</span>
+            <span th:if="${item.enrollment.status.name() == 'WAITING'}" class="status status-waiting"
+                  th:text="'候补第 ' + ${item.enrollment.waitingNo} + ' 位'">候补</span>
+            <span th:if="${item.enrollment.status.name() == 'REJECTED'}" class="status status-rejected">未通过审核</span>
         </p>
     </div>
 

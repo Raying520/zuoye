@@ -58,3 +58,21 @@ button, .btn {
 .muted { color: #888780; font-size: 13px; margin-bottom: 16px; }
 
 a.link { color: #185fa5; font-size: 13px; text-decoration: none; }
+
+.form-check { display: flex; align-items: center; margin: 12px 0; }
+.form-check input[type="checkbox"] { width: auto; margin-right: 8px; }
+.form-check label { margin: 0; font-weight: 500; }
+
+.status { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+.status-open { background: #e1f5ee; color: #085041; }
+.status-closed { background: #f0f0f0; color: #5f5e5a; }
+.status-cancelled { background: #fcebeb; color: #791f1f; }
+.status-pending { background: #fff3cd; color: #856404; }
+.status-waiting { background: #e7f3ff; color: #185fa5; }
+.status-rejected { background: #fcebeb; color: #791f1f; }
+
+.actions form { display: inline; }
+.actions .btn { width: auto; margin-top: 0; margin-left: 6px; padding: 4px 10px; font-size: 12px; }
+.actions .btn-secondary { background: #5f5e5a; }
+.actions .btn-danger { background: #a32d2d; }
+.actions .btn-success { background: #2f7d55; }

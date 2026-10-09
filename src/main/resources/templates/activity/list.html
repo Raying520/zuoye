@@ -32,11 +32,15 @@
             · <span th:text="${item.activity.place}">地点</span>
         </p>
         <p class="meta">
-            容量：<span th:text="${item.activity.capacity}">0</span> 人 · 已报：<span th:text="${item.enrolledCount}">0</span> 人
+            容量：<span th:text="${item.activity.capacity}">0</span> 人
+            · 已通过：<span th:text="${item.enrolledCount}">0</span> 人
+            <span th:if="${item.waitingCount > 0}" th:text="'· 候补 ' + ${item.waitingCount} + ' 人'"></span>
             <span class="status" th:classappend="${item.activity.status.name() == 'OPEN'} ? 'status-open' : (${item.activity.status.name() == 'CLOSED'} ? 'status-closed' : 'status-cancelled')"
                   th:text="${item.activity.status.name() == 'OPEN'} ? '报名中' : (${item.activity.status.name() == 'CLOSED'} ? '已结束' : '已取消')">
                 状态
             </span>
+            <span th:if="${item.activity.requireAudit}" class="status status-pending">需审核</span>
+            <span th:if="${item.activity.allowWaitlist}" class="status status-waiting">可候补</span>
         </p>
     </div>
 

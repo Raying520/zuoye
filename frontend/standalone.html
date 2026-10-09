@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>校园活动管理系统 V1.0</title>
+    <title>校园活动管理系统 V2.0</title>
     <style>
         :root {
             --primary: #2c7a7b; --primary-dark: #285e61; --secondary: #ed8936;
@@ -36,6 +36,8 @@
         .form-group label { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; }
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit; }
         .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); }
+        .form-check { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+        .form-check input { width: auto; }
         .help-text { font-size: 12px; color: var(--text-light); margin-top: 4px; }
         .alert { padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; display: none; }
         .alert-error { background: #fed7d7; color: #c53030; }
@@ -48,6 +50,9 @@
         .status-open { background: #c6f6d5; color: #276749; }
         .status-closed { background: #e2e8f0; color: #4a5568; }
         .status-cancelled { background: #fed7d7; color: #c53030; }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-waiting { background: #e7f3ff; color: #185fa5; }
+        .status-rejected { background: #fed7d7; color: #c53030; }
         .empty { text-align: center; color: var(--text-light); padding: 40px 0; }
         table { width: 100%; border-collapse: collapse; margin-top: 12px; }
         th, td { text-align: left; padding: 10px; border-bottom: 1px solid var(--border); }
@@ -70,7 +75,7 @@
 <body>
     <header>
         <div class="container">
-            <h1 onclick="go('home')" style="cursor:pointer;">校园活动管理系统 V1.0</h1>
+            <h1 onclick="go('home')" style="cursor:pointer;">校园活动管理系统 V2.0</h1>
             <nav id="header-nav"></nav>
         </div>
     </header>
@@ -81,7 +86,7 @@
     </div>
 
     <footer>
-        <div class="container">校园活动管理系统 V1.0 · 基于工程意图的软件迭代开发 · 单文件独立运行版</div>
+        <div class="container">校园活动管理系统 V2.0 · 基于工程意图的软件迭代开发 · 单文件独立运行版</div>
     </footer>
 
 <script>
@@ -102,10 +107,10 @@ function initDB() {
             { id: 3, username: 'student02', password: '123456', name: '李同学', role: 'student' }
         ],
         activities: [
-            { id: 1, title: '校园编程马拉松', description: '面向全校学生的 24 小时编程挑战赛。', activityTime: '2026-09-25T09:00', place: '计算机楼 301', capacity: 30, status: 'OPEN', teacherId: 1, createTime: '2026-09-10T10:00' },
-            { id: 2, title: '迎新晚会彩排', description: '社团联合会迎新晚会第一次彩排。', activityTime: '2026-09-20T18:30', place: '大学生活动中心', capacity: 50, status: 'CLOSED', teacherId: 1, createTime: '2026-09-08T14:00' }
+            { id: 1, title: '校园编程马拉松', description: '面向全校学生的 24 小时编程挑战赛。', activityTime: '2026-09-25T09:00', place: '计算机楼 301', capacity: 2, requirements: '自带电脑，熟悉任一编程语言', registrationDeadline: '2026-09-24T23:59', requireAudit: false, allowWaitlist: true, status: 'OPEN', teacherId: 1, createTime: '2026-09-10T10:00' },
+            { id: 2, title: '迎新晚会彩排', description: '社团联合会迎新晚会第一次彩排。', activityTime: '2026-09-20T18:30', place: '大学生活动中心', capacity: 50, requirements: '', registrationDeadline: '2026-09-19T12:00', requireAudit: false, allowWaitlist: false, status: 'CLOSED', teacherId: 1, createTime: '2026-09-08T14:00' }
         ],
-        enrollments: [{ id: 1, activityId: 1, userId: 2, createTime: '2026-09-11T09:30' }],
+        enrollments: [{ id: 1, activityId: 1, userId: 2, status: 'APPROVED', waitingNo: null, createTime: '2026-09-11T09:30' }],
         nextUserId: 4, nextActivityId: 3, nextEnrollmentId: 2
     };
     saveDB(db);
@@ -136,12 +141,12 @@ function getCurrentUser() { const raw = sessionStorage.getItem('currentUser'); r
 
 function getAllActivities() {
     const db = getDB();
-    return db.activities.map(act => ({ ...act, enrolledCount: countEnrollmentsByActivity(act.id) }))
+    return db.activities.map(act => ({ ...act, approvedCount: countApproved(act.id), waitingCount: countWaiting(act.id) }))
         .sort((a, b) => new Date(b.activityTime) - new Date(a.activityTime));
 }
 function getActivityById(id) {
     const act = getDB().activities.find(a => a.id === id);
-    return act ? { ...act, enrolledCount: countEnrollmentsByActivity(id) } : null;
+    return act ? { ...act, approvedCount: countApproved(id), waitingCount: countWaiting(id) } : null;
 }
 function getActivitiesByTeacher(teacherId) { return getAllActivities().filter(a => a.teacherId === teacherId); }
 
@@ -151,6 +156,18 @@ function createActivity(activity) {
     db.activities.push(newAct);
     saveDB(db);
     return newAct;
+}
+
+function updateActivity(id, data, teacherId) {
+    const db = getDB();
+    const idx = db.activities.findIndex(a => a.id === id);
+    if (idx === -1) return { success: false, message: '活动不存在' };
+    const act = db.activities[idx];
+    if (act.teacherId !== teacherId) return { success: false, message: '只能编辑自己发布的活动' };
+    if (act.status !== 'OPEN') return { success: false, message: '活动当前状态不可编辑' };
+    db.activities[idx] = { ...act, ...data };
+    saveDB(db);
+    return { success: true };
 }
 
 function updateActivityStatus(id, status, teacherId) {
@@ -166,21 +183,51 @@ function updateActivityStatus(id, status, teacherId) {
 
 function getEnrollmentsByActivity(activityId) {
     return getDB().enrollments.filter(e => e.activityId === activityId)
-        .map(e => ({ ...e, userName: findUserById(e.userId)?.name || '未知' }));
+        .map(e => ({ ...e, userName: findUserById(e.userId)?.name || '未知' }))
+        .sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
 }
-function countEnrollmentsByActivity(activityId) { return getDB().enrollments.filter(e => e.activityId === activityId).length; }
-function dbHasEnrollment(activityId, userId) { return getDB().enrollments.some(e => e.activityId === activityId && e.userId === userId); }
+function countApproved(activityId) { return getDB().enrollments.filter(e => e.activityId === activityId && e.status === 'APPROVED').length; }
+function countWaiting(activityId) { return getDB().enrollments.filter(e => e.activityId === activityId && e.status === 'WAITING').length; }
+function findEnrollment(activityId, userId) { return getDB().enrollments.find(e => e.activityId === activityId && e.userId === userId); }
+function hasActiveEnrollment(activityId, userId) {
+    const e = findEnrollment(activityId, userId);
+    return e && ['PENDING', 'APPROVED', 'WAITING'].includes(e.status);
+}
 
 function enroll(activityId, userId) {
     const db = getDB();
     const act = db.activities.find(a => a.id === activityId);
     if (!act) return { success: false, message: '活动不存在' };
     if (act.status !== 'OPEN') return { success: false, message: '该活动当前不可报名' };
-    if (countEnrollmentsByActivity(activityId) >= act.capacity) return { success: false, message: '活动名额已满' };
-    if (dbHasEnrollment(activityId, userId)) return { success: false, message: '你已经报名过该活动' };
-    db.enrollments.push({ id: db.nextEnrollmentId++, activityId, userId, createTime: new Date().toISOString() });
+    if (act.registrationDeadline && new Date() > new Date(act.registrationDeadline)) return { success: false, message: '报名已截止' };
+
+    const existing = findEnrollment(activityId, userId);
+    if (existing) {
+        if (existing.status === 'REJECTED') {
+            const idx = db.enrollments.indexOf(existing);
+            db.enrollments.splice(idx, 1);
+        } else if (!existing.status || ['PENDING', 'APPROVED', 'WAITING'].includes(existing.status)) {
+            return { success: false, message: '你已经报名/候补/审核中该活动' };
+        }
+    }
+
+    const newEn = { id: db.nextEnrollmentId++, activityId, userId, createTime: new Date().toISOString() };
+    if (act.requireAudit) {
+        if (countApproved(activityId) >= act.capacity) return { success: false, message: '活动名额已满' };
+        newEn.status = 'PENDING';
+    } else {
+        if (countApproved(activityId) < act.capacity) {
+            newEn.status = 'APPROVED';
+        } else if (act.allowWaitlist) {
+            newEn.status = 'WAITING';
+            newEn.waitingNo = nextWaitingNo(activityId);
+        } else {
+            return { success: false, message: '活动名额已满' };
+        }
+    }
+    db.enrollments.push(newEn);
     saveDB(db);
-    return { success: true };
+    return { success: true, status: newEn.status, waitingNo: newEn.waitingNo, message: statusMessage(newEn.status, newEn.waitingNo) };
 }
 
 function cancelEnrollment(activityId, userId) {
@@ -190,9 +237,64 @@ function cancelEnrollment(activityId, userId) {
     if (act.status !== 'OPEN') return { success: false, message: '活动当前不可取消报名' };
     const idx = db.enrollments.findIndex(e => e.activityId === activityId && e.userId === userId);
     if (idx === -1) return { success: false, message: '你尚未报名该活动' };
+    const oldStatus = db.enrollments[idx].status;
     db.enrollments.splice(idx, 1);
     saveDB(db);
+    if (oldStatus === 'APPROVED') promoteWaiting(activityId);
     return { success: true };
+}
+
+function approveEnrollment(enrollmentId, teacherId) {
+    const db = getDB();
+    const e = db.enrollments.find(x => x.id === enrollmentId);
+    if (!e) return { success: false, message: '报名记录不存在' };
+    const act = db.activities.find(a => a.id === e.activityId);
+    if (!act) return { success: false, message: '活动不存在' };
+    if (act.teacherId !== teacherId) return { success: false, message: '只能审核自己发布的活动' };
+    if (e.status !== 'PENDING') return { success: false, message: '只能审核待审核的报名' };
+    if (countApproved(act.id) >= act.capacity) return { success: false, message: '已通过人数已达容量上限' };
+    e.status = 'APPROVED';
+    e.waitingNo = null;
+    saveDB(db);
+    return { success: true };
+}
+
+function rejectEnrollment(enrollmentId, teacherId) {
+    const db = getDB();
+    const e = db.enrollments.find(x => x.id === enrollmentId);
+    if (!e) return { success: false, message: '报名记录不存在' };
+    const act = db.activities.find(a => a.id === e.activityId);
+    if (!act) return { success: false, message: '活动不存在' };
+    if (act.teacherId !== teacherId) return { success: false, message: '只能审核自己发布的活动' };
+    if (e.status !== 'PENDING') return { success: false, message: '只能审核待审核的报名' };
+    e.status = 'REJECTED';
+    e.waitingNo = null;
+    saveDB(db);
+    return { success: true };
+}
+
+function promoteWaiting(activityId) {
+    const db = getDB();
+    const waiting = db.enrollments
+        .filter(e => e.activityId === activityId && e.status === 'WAITING')
+        .sort((a, b) => new Date(a.createTime) - new Date(b.createTime));
+    if (waiting.length) {
+        waiting[0].status = 'APPROVED';
+        waiting[0].waitingNo = null;
+        saveDB(db);
+    }
+}
+
+function nextWaitingNo(activityId) {
+    const waiting = getDB().enrollments.filter(e => e.activityId === activityId && e.status === 'WAITING');
+    return waiting.length ? Math.max(...waiting.map(e => e.waitingNo || 0)) + 1 : 1;
+}
+
+function statusMessage(status, waitingNo) {
+    if (status === 'APPROVED') return '报名成功';
+    if (status === 'PENDING') return '报名申请已提交，等待教师审核';
+    if (status === 'WAITING') return '名额已满，已加入候补（第 ' + waitingNo + ' 位）';
+    return '报名成功';
 }
 
 function formatDateTime(iso) {
@@ -202,14 +304,18 @@ function formatDateTime(iso) {
 }
 function pad(n) { return n < 10 ? '0'+n : n; }
 function statusText(status) { return { OPEN: '报名中', CLOSED: '已结束', CANCELLED: '已取消' }[status] || status; }
+function enrollmentStatusText(status) { return { APPROVED: '已报名', PENDING: '审核中', WAITING: '候补', REJECTED: '未通过' }[status] || status; }
 function statusClass(status) { return { OPEN: 'status-open', CLOSED: 'status-closed', CANCELLED: 'status-cancelled' }[status] || ''; }
+function enrollmentStatusClass(status) { return { APPROVED: 'status-open', PENDING: 'status-pending', WAITING: 'status-waiting', REJECTED: 'status-rejected' }[status] || ''; }
 function resetData() { localStorage.removeItem(DB_KEY); initDB(); }
 
 // ==================== 路由与渲染 ====================
 
 function go(page, params = {}) {
     let hash = '#' + page;
-    if (params.id !== undefined) hash += '?id=' + params.id;
+    const qs = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) qs.append(k, v);
+    if (qs.toString()) hash += '?' + qs.toString();
     location.hash = hash;
 }
 
@@ -358,15 +464,27 @@ const pages = {
         const act = getActivityById(id);
         if (!act) return `<div class="card"><div class="empty">活动不存在</div></div>`;
         const teacher = findUserById(act.teacherId);
+        const deadlinePassed = act.registrationDeadline && new Date() > new Date(act.registrationDeadline);
+        const my = user.role === 'student' ? findEnrollment(act.id, user.id) : null;
         let actions = '';
         if (user.role === 'student') {
-            const isEnrolled = dbHasEnrollment(act.id, user.id);
-            if (act.status !== 'OPEN') actions = `<button class="btn" disabled>该活动当前不可报名</button>`;
-            else if (isEnrolled) actions = `<button class="btn btn-success" disabled>已报名</button> <button class="btn btn-danger" onclick="cancelMyEnrollment(${act.id})">取消报名</button>`;
-            else if (act.enrolledCount >= act.capacity) actions = `<button class="btn" disabled>名额已满</button>`;
-            else actions = `<button class="btn btn-primary" onclick="enrollActivity(${act.id})">立即报名</button>`;
+            if (!my) {
+                if (act.status !== 'OPEN') actions = `<button class="btn" disabled>该活动当前不可报名</button>`;
+                else if (deadlinePassed) actions = `<button class="btn" disabled>报名已截止</button>`;
+                else if (act.approvedCount < act.capacity && !act.requireAudit) actions = `<button class="btn btn-primary" onclick="enrollActivity(${act.id})">立即报名</button>`;
+                else if (act.requireAudit) actions = `<button class="btn btn-primary" onclick="enrollActivity(${act.id})">提交报名申请</button>`;
+                else if (act.allowWaitlist) actions = `<button class="btn btn-secondary" onclick="enrollActivity(${act.id})">候补报名</button>`;
+                else actions = `<button class="btn" disabled>名额已满</button>`;
+            } else {
+                let statusHtml = `<span class="status ${enrollmentStatusClass(my.status)}">${enrollmentStatusText(my.status)}${my.status === 'WAITING' ? ' 第 ' + my.waitingNo + ' 位' : ''}</span>`;
+                let cancelBtn = (act.status === 'OPEN' && my.status !== 'REJECTED') ? ` <button class="btn btn-danger" onclick="cancelMyEnrollment(${act.id})">取消报名</button>` : '';
+                let retryBtn = (my.status === 'REJECTED' && act.status === 'OPEN' && !deadlinePassed) ? ` <button class="btn btn-secondary" onclick="enrollActivity(${act.id})">重新报名</button>` : '';
+                actions = statusHtml + cancelBtn + retryBtn;
+            }
         } else if (user.role === 'teacher' && act.teacherId === user.id) {
-            actions = `<button class="btn btn-outline" onclick="go('activity-enrollments',{id:${act.id}})">查看名单</button> <button class="btn btn-secondary" onclick="go('activity-manage')">管理活动</button>`;
+            actions = `<button class="btn btn-outline" onclick="go('activity-enrollments',{id:${act.id}})">查看名单</button>`;
+            if (act.status === 'OPEN') actions += ` <button class="btn btn-secondary" onclick="go('activity-form',{mode:'edit',id:${act.id}})">编辑活动</button>`;
+            actions += ` <button class="btn btn-secondary" onclick="go('activity-manage')">管理活动</button>`;
         }
         return `
             <div class="card">
@@ -374,8 +492,12 @@ const pages = {
                 <div class="meta" style="margin-bottom:16px;">发布时间：${formatDateTime(act.createTime)} · 发布者：${teacher?.name || '未知'}</div>
                 <p><strong>活动时间：</strong>${formatDateTime(act.activityTime)}</p>
                 <p><strong>活动地点：</strong>${act.place}</p>
+                <p><strong>报名截止：</strong>${formatDateTime(act.registrationDeadline)} ${deadlinePassed ? '<span class="status status-rejected">已截止</span>' : ''}</p>
                 <p><strong>活动容量：</strong>${act.capacity} 人</p>
-                <p><strong>已报人数：</strong>${act.enrolledCount} 人</p>
+                <p><strong>已通过：</strong>${act.approvedCount} 人${act.waitingCount > 0 ? ' · 候补 ' + act.waitingCount + ' 人' : ''}</p>
+                ${act.requireAudit ? '<p><span class="status status-pending">需要教师审核</span></p>' : ''}
+                ${act.allowWaitlist ? '<p><span class="status status-waiting">满员后开放候补</span></p>' : ''}
+                ${act.requirements ? `<p><strong>参与条件：</strong>${act.requirements}</p>` : ''}
                 <p style="margin-top:12px;">${act.description}</p>
                 <div class="actions">${actions}</div>
             </div>`;
@@ -384,16 +506,29 @@ const pages = {
     'activity-form'() {
         const user = requireLogin('teacher');
         if (!user) return '';
+        const mode = getParam('mode') || 'create';
+        const id = parseInt(getParam('id'));
+        const isEdit = mode === 'edit';
+        let act = null;
+        if (isEdit) {
+            act = getActivityById(id);
+            if (!act || act.teacherId !== user.id) { showAlert('无权编辑该活动', 'error'); go('home'); return ''; }
+        }
         return `
             <div class="card" style="max-width:600px;">
-                <h2>发布新活动</h2>
+                <h2>${isEdit ? '编辑活动' : '发布新活动'}</h2>
                 <form onsubmit="submitActivity(event)">
-                    <div class="form-group"><label>活动标题</label><input type="text" id="title" required placeholder="请输入活动标题"></div>
-                    <div class="form-group"><label>活动时间</label><input type="datetime-local" id="activityTime" required></div>
-                    <div class="form-group"><label>活动地点</label><input type="text" id="place" required placeholder="请输入活动地点"></div>
-                    <div class="form-group"><label>活动容量（人）</label><input type="number" id="capacity" min="1" required placeholder="至少 1 人"></div>
-                    <div class="form-group"><label>活动简介</label><textarea id="description" rows="4" placeholder="请输入活动简介"></textarea></div>
-                    <div class="actions"><button type="submit" class="btn btn-primary">发布活动</button> <button type="button" class="btn btn-outline" onclick="go('home')">返回</button></div>
+                    <input type="hidden" id="editId" value="${isEdit ? act.id : ''}">
+                    <div class="form-group"><label>活动标题</label><input type="text" id="title" required value="${isEdit ? escapeHtml(act.title) : ''}" placeholder="请输入活动标题"></div>
+                    <div class="form-group"><label>活动时间</label><input type="datetime-local" id="activityTime" required value="${isEdit ? act.activityTime : ''}"></div>
+                    <div class="form-group"><label>活动地点</label><input type="text" id="place" required value="${isEdit ? escapeHtml(act.place) : ''}" placeholder="请输入活动地点"></div>
+                    <div class="form-group"><label>活动容量（人）</label><input type="number" id="capacity" min="1" required value="${isEdit ? act.capacity : ''}" placeholder="至少 1 人"></div>
+                    <div class="form-group"><label>报名截止时间</label><input type="datetime-local" id="registrationDeadline" required value="${isEdit ? act.registrationDeadline : ''}"></div>
+                    <div class="form-group"><label>参与条件说明</label><textarea id="requirements" rows="3" placeholder="例如：仅限大一新生、需要自带电脑等">${isEdit ? escapeHtml(act.requirements || '') : ''}</textarea></div>
+                    <div class="form-group"><label>活动简介</label><textarea id="description" rows="4" placeholder="请输入活动简介">${isEdit ? escapeHtml(act.description || '') : ''}</textarea></div>
+                    <div class="form-check"><input type="checkbox" id="requireAudit" ${isEdit && act.requireAudit ? 'checked' : ''}><label for="requireAudit">需要教师审核</label></div>
+                    <div class="form-check"><input type="checkbox" id="allowWaitlist" ${isEdit && act.allowWaitlist ? 'checked' : ''}><label for="allowWaitlist">允许候补报名</label></div>
+                    <div class="actions"><button type="submit" class="btn btn-primary">${isEdit ? '保存修改' : '发布活动'}</button> <button type="button" class="btn btn-outline" onclick="go('home')">返回</button></div>
                 </form>
             </div>`;
     },
@@ -413,11 +548,12 @@ const pages = {
                                 <tr>
                                     <td><a onclick="go('activity-detail',{id:${act.id}})" class="link">${act.title}</a></td>
                                     <td>${formatDateTime(act.activityTime)}</td>
-                                    <td>${act.enrolledCount}/${act.capacity}</td>
+                                    <td>${act.approvedCount}/${act.capacity}${act.waitingCount ? '（候补 ' + act.waitingCount + '）' : ''}</td>
                                     <td><span class="status ${statusClass(act.status)}">${statusText(act.status)}</span></td>
                                     <td>
                                         <button class="btn btn-outline" style="padding:4px 10px;font-size:12px;" onclick="go('activity-enrollments',{id:${act.id}})">名单</button>
                                         ${act.status === 'OPEN' ? `
+                                            <button class="btn btn-secondary" style="padding:4px 10px;font-size:12px;" onclick="go('activity-form',{mode:'edit',id:${act.id}})">编辑</button>
                                             <button class="btn btn-secondary" style="padding:4px 10px;font-size:12px;" onclick="closeAct(${act.id})">结束</button>
                                             <button class="btn btn-danger" style="padding:4px 10px;font-size:12px;" onclick="cancelAct(${act.id})">取消</button>
                                         ` : ''}
@@ -438,14 +574,21 @@ const pages = {
         if (!act) return `<div class="card"><div class="empty">活动不存在</div></div>`;
         if (act.teacherId !== user.id) return `<div class="card"><div class="empty">无权查看该活动的报名名单</div></div>`;
         const list = getEnrollmentsByActivity(id);
+        const pendingCount = list.filter(e => e.status === 'PENDING').length;
         return `
             <div class="card">
                 <h2>报名名单</h2>
-                <div class="meta" style="margin-bottom:16px;">活动：<strong>${act.title}</strong> · 状态：<span class="status ${statusClass(act.status)}">${statusText(act.status)}</span> · 已报人数：${act.enrolledCount}/${act.capacity}</div>
+                <div class="meta" style="margin-bottom:16px;">活动：<strong>${act.title}</strong> · 状态：<span class="status ${statusClass(act.status)}">${statusText(act.status)}</span> · 已通过：${act.approvedCount}/${act.capacity} · 待审核：${pendingCount} · 候补：${act.waitingCount}</div>
                 ${list.length ? `
                     <table>
-                        <thead><tr><th>序号</th><th>姓名</th><th>报名时间</th></tr></thead>
-                        <tbody>${list.map((e, idx) => `<tr><td>${idx+1}</td><td>${e.userName}</td><td>${formatDateTime(e.createTime)}</td></tr>`).join('')}</tbody>
+                        <thead><tr><th>序号</th><th>姓名</th><th>状态</th><th>报名时间</th><th>操作</th></tr></thead>
+                        <tbody>${list.map((e, idx) => `<tr>
+                            <td>${idx+1}</td>
+                            <td>${e.userName}</td>
+                            <td><span class="status ${enrollmentStatusClass(e.status)}">${enrollmentStatusText(e.status)}${e.status === 'WAITING' ? ' 第 ' + e.waitingNo + ' 位' : ''}</span></td>
+                            <td>${formatDateTime(e.createTime)}</td>
+                            <td>${act.status === 'OPEN' && e.status === 'PENDING' ? `<button class="btn btn-success" style="padding:4px 10px;font-size:12px;" onclick="approveEnroll(${e.id})">通过</button> <button class="btn btn-danger" style="padding:4px 10px;font-size:12px;" onclick="rejectEnroll(${e.id})">拒绝</button>` : ''}</td>
+                        </tr>`).join('')}</tbody>
                     </table>
                 ` : '<div class="empty">暂无学生报名</div>'}
                 <div class="actions" style="margin-top:20px;"><button class="btn btn-outline" onclick="go('activity-manage')">返回管理列表</button></div>
@@ -469,8 +612,10 @@ const pages = {
                             <div class="activity-item">
                                 <h3><a onclick="go('activity-detail',{id:${act.id}})" class="link">${act.title}</a></h3>
                                 <div class="meta">时间：${formatDateTime(act.activityTime)} · 地点：${act.place} <span class="status ${statusClass(act.status)}">${statusText(act.status)}</span></div>
-                                <p style="margin-top:8px;font-size:13px;color:var(--text-light);">报名时间：${formatDateTime(item.createTime)}</p>
-                                ${act.status === 'OPEN' ? `<div class="actions"><button class="btn btn-danger" onclick="cancelEnroll(${act.id})">取消报名</button></div>` : ''}
+                                <p style="margin-top:8px;font-size:13px;color:var(--text-light);">
+                                    报名时间：${formatDateTime(item.createTime)} · 状态：<span class="status ${enrollmentStatusClass(item.status)}">${enrollmentStatusText(item.status)}${item.status === 'WAITING' ? ' 第 ' + item.waitingNo + ' 位' : ''}</span>
+                                </p>
+                                ${act.status === 'OPEN' && item.status !== 'REJECTED' ? `<div class="actions"><button class="btn btn-danger" onclick="cancelEnroll(${act.id})">取消报名</button></div>` : ''}
                             </div>
                         `;
                     }).join('') : '<div class="empty">你还没有报名任何活动</div>'}
@@ -483,11 +628,16 @@ function activityItem(act, manage) {
     return `
         <div class="activity-item">
             <h3><a onclick="go('activity-detail',{id:${act.id}})" class="link">${act.title}</a></h3>
-            <div class="meta">时间：${formatDateTime(act.activityTime)} · 地点：${act.place} · 已报：${act.enrolledCount}/${act.capacity} 人 <span class="status ${statusClass(act.status)}">${statusText(act.status)}</span></div>
+            <div class="meta">时间：${formatDateTime(act.activityTime)} · 地点：${act.place} · 已通过：${act.approvedCount}/${act.capacity} 人${act.waitingCount ? ' · 候补 ' + act.waitingCount + ' 人' : ''} <span class="status ${statusClass(act.status)}">${statusText(act.status)}</span>${act.requireAudit ? ' <span class="status status-pending">需审核</span>' : ''}${act.allowWaitlist ? ' <span class="status status-waiting">可候补</span>' : ''}</div>
             <p style="margin-top:8px;font-size:14px;color:var(--text-light);">${act.description.length > 80 ? act.description.slice(0,80)+'…' : act.description}</p>
             ${manage ? `<div class="actions"><button class="btn btn-outline" onclick="go('activity-enrollments',{id:${act.id}})">查看名单</button></div>` : ''}
         </div>
     `;
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 // ==================== 表单提交处理 ====================
@@ -520,19 +670,35 @@ function submitRegister(e) {
 function submitActivity(e) {
     e.preventDefault();
     const user = getCurrentUser();
+    const editId = document.getElementById('editId').value;
     const activity = {
         title: document.getElementById('title').value.trim(),
         activityTime: document.getElementById('activityTime').value,
         place: document.getElementById('place').value.trim(),
         capacity: parseInt(document.getElementById('capacity').value),
+        registrationDeadline: document.getElementById('registrationDeadline').value,
+        requirements: document.getElementById('requirements').value.trim(),
         description: document.getElementById('description').value.trim(),
+        requireAudit: document.getElementById('requireAudit').checked,
+        allowWaitlist: document.getElementById('allowWaitlist').checked,
         teacherId: user.id
     };
-    if (!activity.title || !activity.activityTime || !activity.place) { showAlert('标题、时间、地点为必填项', 'error'); return; }
+    if (!activity.title || !activity.activityTime || !activity.place || !activity.registrationDeadline) { showAlert('标题、时间、地点、报名截止时间为必填项', 'error'); return; }
     if (activity.capacity < 1) { showAlert('容量至少为 1', 'error'); return; }
-    createActivity(activity);
-    showAlert('活动发布成功', 'success');
-    setTimeout(() => go('home'), 800);
+
+    let result;
+    if (editId) {
+        result = updateActivity(parseInt(editId), activity, user.id);
+    } else {
+        createActivity(activity);
+        result = { success: true };
+    }
+    if (result.success) {
+        showAlert(editId ? '活动修改成功' : '活动发布成功', 'success');
+        setTimeout(() => go('home'), 800);
+    } else {
+        showAlert(result.message, 'error');
+    }
 }
 
 function enrollActivity(activityId) {
@@ -569,6 +735,20 @@ function cancelAct(id) {
     const user = getCurrentUser();
     const result = updateActivityStatus(id, 'CANCELLED', user.id);
     showAlert(result.message, result.success ? 'success' : 'error');
+    if (result.success) render();
+}
+
+function approveEnroll(enrollmentId) {
+    const user = getCurrentUser();
+    const result = approveEnrollment(enrollmentId, user.id);
+    showAlert(result.message || '已通过', result.success ? 'success' : 'error');
+    if (result.success) render();
+}
+
+function rejectEnroll(enrollmentId) {
+    const user = getCurrentUser();
+    const result = rejectEnrollment(enrollmentId, user.id);
+    showAlert(result.message || '已拒绝', result.success ? 'success' : 'error');
     if (result.success) render();
 }
 
