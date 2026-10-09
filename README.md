@@ -61,3 +61,4 @@ Java 17 · Spring Boot 3 · Thymeleaf · Spring Data JPA · H2 数据库 · Mave
 | docs/项目实现总览.md | 全部代码整合映射：FR/BR 与 Controller/Service/页面一一对应 |
 | docs/代码分步整合.md | 按 M1/FR1–FR7 分步汇总每一步涉及的全部源码（含脚本可重新生成） |
 | docs/问题与解决方案.md | 开发过程中遇到的技术问题、原因分析与经验总结 |
+| docs/教师访谈分析.md | 从教师访谈中提取的 V2.0 候选需求（审核、候补、状态可见、活动编辑） |
