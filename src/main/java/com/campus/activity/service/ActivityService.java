@@ -70,14 +70,14 @@ public class ActivityService {
         activity.setAllowWaitlist(form.getAllowWaitlist() != null ? form.getAllowWaitlist() : false);
     }
 
-    /** 查询所有活动，按活动时间倒序（FR4） */
+    /** 查询所有正常活动，按活动时间倒序（FR4 + V3.0 BR15） */
     public List<Activity> findAll() {
-        return activityRepository.findAllByOrderByActivityTimeDesc();
+        return activityRepository.findByPlatformStatusOrderByActivityTimeDesc(Activity.PlatformStatus.NORMAL);
     }
 
-    /** 查询所有活动并附带当前报名人数（FR4 列表展示） */
+    /** 查询所有正常活动并附带当前报名人数（FR4 列表展示） */
     public List<ActivityListItem> findAllWithEnrollmentCount() {
-        List<Activity> activities = activityRepository.findAllByOrderByActivityTimeDesc();
+        List<Activity> activities = activityRepository.findByPlatformStatusOrderByActivityTimeDesc(Activity.PlatformStatus.NORMAL);
         List<ActivityListItem> result = new ArrayList<>(activities.size());
         LocalDateTime now = LocalDateTime.now();
         for (Activity activity : activities) {
@@ -87,6 +87,20 @@ public class ActivityService {
             result.add(new ActivityListItem(activity, approved, waiting, deadlinePassed));
         }
         return result;
+    }
+
+    /** 管理员查看全部活动（V3.0 FR18） */
+    public List<Activity> findAllForAdmin() {
+        return activityRepository.findAllByOrderByActivityTimeDesc();
+    }
+
+    /** 管理员设置活动平台状态（V3.0 FR19） */
+    @Transactional
+    public void setPlatformStatus(Long activityId, Activity.PlatformStatus status) {
+        Activity activity = activityRepository.findById(activityId)
+                .orElseThrow(() -> new IllegalArgumentException("活动不存在"));
+        activity.setPlatformStatus(status);
+        activityRepository.save(activity);
     }
 
     /** 教师查询自己发布的活动（FR7） */

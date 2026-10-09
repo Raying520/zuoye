@@ -11,14 +11,17 @@ import jakarta.persistence.Table;
 
 /**
  * 用户实体（对应数据表 app_user，逻辑名"用户表"）
- * 角色：STUDENT 学生 / TEACHER 教师
+ * 角色：STUDENT 学生 / TEACHER 教师 / ADMIN 系统管理员（V3.0 新增）
  */
 @Entity
 @Table(name = "app_user")
 public class User {
 
     /** 用户角色 */
-    public enum Role { STUDENT, TEACHER }
+    public enum Role { STUDENT, TEACHER, ADMIN }
+
+    /** 账号状态（V3.0） */
+    public enum Status { ENABLED, DISABLED }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,10 +39,15 @@ public class User {
     @Column(nullable = false, length = 50)
     private String name;
 
-    /** 角色：STUDENT / TEACHER */
+    /** 角色：STUDENT / TEACHER / ADMIN */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private Role role;
+
+    /** 账号状态：ENABLED / DISABLED（V3.0） */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private Status status = Status.ENABLED;
 
     public Long getId() { return id; }
 
@@ -60,4 +68,8 @@ public class User {
     public Role getRole() { return role; }
 
     public void setRole(Role role) { this.role = role; }
+
+    public Status getStatus() { return status; }
+
+    public void setStatus(Status status) { this.status = status; }
 }

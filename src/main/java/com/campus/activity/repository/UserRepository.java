@@ -3,6 +3,7 @@ package com.campus.activity.repository;
 import com.campus.activity.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -15,4 +16,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     /** 登录时按账号查询用户（FR2） */
     Optional<User> findByUsername(String username);
+
+    /** 管理员查看全部用户（V3.0 FR17） */
+    List<User> findAllByOrderByIdDesc();
 }

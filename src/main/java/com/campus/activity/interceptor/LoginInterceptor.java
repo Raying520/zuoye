@@ -29,6 +29,14 @@ public class LoginInterceptor implements HandlerInterceptor {
         }
         // 把当前用户附加到请求属性，方便 Controller 直接读取
         request.setAttribute(SESSION_KEY, user);
+
+        // V3.0：管理员后台仅限 ADMIN 访问
+        String uri = request.getRequestURI();
+        if (uri.startsWith("/admin/") && !user.isAdmin()) {
+            response.sendRedirect("/");
+            return false;
+        }
+
         return true;
     }
 }

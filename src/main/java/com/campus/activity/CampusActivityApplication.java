@@ -1,17 +1,20 @@
 package com.campus.activity;
 
 import com.campus.activity.entity.Enrollment;
+import com.campus.activity.entity.User;
 import com.campus.activity.repository.EnrollmentRepository;
+import com.campus.activity.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.List;
 
 /**
- * 校园活动管理系统 V2.0 启动类
+ * 校园活动管理系统 V3.0 启动类
  */
 @SpringBootApplication
 @EnableJpaAuditing
@@ -36,6 +39,25 @@ public class CampusActivityApplication {
                     e.setStatus(Enrollment.Status.APPROVED);
                 }
                 enrollmentRepository.saveAll(legacy);
+            }
+        };
+    }
+
+    /**
+     * V3.0 数据兼容：预置系统管理员账号 admin / admin123（如果不存在）。
+     * 管理员不通过注册入口创建，避免普通用户提升权限。
+     */
+    @Bean
+    CommandLineRunner seedAdmin(UserRepository userRepository) {
+        return args -> {
+            if (userRepository.findByUsername("admin").isEmpty()) {
+                User admin = new User();
+                admin.setUsername("admin");
+                admin.setPassword(new BCryptPasswordEncoder().encode("admin123"));
+                admin.setName("系统管理员");
+                admin.setRole(User.Role.ADMIN);
+                admin.setStatus(User.Status.ENABLED);
+                userRepository.save(admin);
             }
         };
     }

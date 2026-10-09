@@ -80,6 +80,9 @@ public class UserController {
         }
         // 3. 写入 Session，完成角色分流
         session.setAttribute(LoginInterceptor.SESSION_KEY, userSession);
+        if (userSession.isAdmin()) {
+            return "redirect:/admin/dashboard";
+        }
         if (userSession.isTeacher()) {
             return "redirect:/teacher/home";
         }

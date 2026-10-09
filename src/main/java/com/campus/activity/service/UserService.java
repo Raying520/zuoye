@@ -40,6 +40,9 @@ public class UserService {
         if (!passwordEncoder.matches(form.getPassword(), user.getPassword())) {
             throw new IllegalArgumentException("账号或密码错误");
         }
+        if (user.getStatus() == User.Status.DISABLED) {
+            throw new IllegalArgumentException("账号已被停用，请联系管理员");
+        }
         return UserSession.fromUser(user);
     }
 
@@ -73,5 +76,18 @@ public class UserService {
     public Map<Long, String> findNamesByIds(List<Long> ids) {
         return userRepository.findAllById(ids).stream()
                 .collect(Collectors.toMap(User::getId, User::getName));
+    }
+
+    /** 管理员查看全部用户（V3.0 FR17） */
+    public List<User> findAll() {
+        return userRepository.findAllByOrderByIdDesc();
+    }
+
+    /** 管理员启用/停用账号（V3.0 FR16） */
+    public void setStatus(Long userId, User.Status status) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
+        user.setStatus(status);
+        userRepository.save(user);
     }
 }

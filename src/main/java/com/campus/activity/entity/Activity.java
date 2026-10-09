@@ -20,6 +20,12 @@ public class Activity {
         CANCELLED   // 已取消
     }
 
+    public enum PlatformStatus {
+        NORMAL,     // 平台正常展示（V3.0）
+        FLAGGED,    // 被标记待整改
+        SUSPENDED   // 被管理员下架
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -63,6 +69,11 @@ public class Activity {
     @Column(nullable = false, length = 20)
     private Status status = Status.OPEN;
 
+    /** 平台监管状态：NORMAL/FLAGGED/SUSPENDED（V3.0） */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "platform_status", nullable = false, length = 20)
+    private PlatformStatus platformStatus = PlatformStatus.NORMAL;
+
     /** 发布教师 ID */
     @Column(name = "teacher_id", nullable = false)
     private Long teacherId;
@@ -105,6 +116,9 @@ public class Activity {
 
     public Status getStatus() { return status; }
     public void setStatus(Status status) { this.status = status; }
+
+    public PlatformStatus getPlatformStatus() { return platformStatus; }
+    public void setPlatformStatus(PlatformStatus platformStatus) { this.platformStatus = platformStatus; }
 
     public Long getTeacherId() { return teacherId; }
     public void setTeacherId(Long teacherId) { this.teacherId = teacherId; }

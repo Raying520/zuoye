@@ -45,8 +45,12 @@ public class UserSession implements Serializable {
 
     public boolean isStudent() { return role == User.Role.STUDENT; }
 
+    public boolean isAdmin() { return role == User.Role.ADMIN; }
+
     /** 返回中文角色名，供页面显示 */
     public String getRoleName() {
-        return role == User.Role.TEACHER ? "教师" : "学生";
+        if (role == User.Role.TEACHER) return "教师";
+        if (role == User.Role.ADMIN) return "管理员";
+        return "学生";
     }
 }

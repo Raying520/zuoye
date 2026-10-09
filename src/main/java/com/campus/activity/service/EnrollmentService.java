@@ -52,6 +52,11 @@ public class EnrollmentService {
             throw new IllegalArgumentException("该活动当前不可报名");
         }
 
+        // V3.0 BR15：被管理员下架的活动不可报名
+        if (activity.getPlatformStatus() == Activity.PlatformStatus.SUSPENDED) {
+            throw new IllegalArgumentException("该活动已被下架，不可报名");
+        }
+
         // FR15：报名截止检查
         if (activity.getRegistrationDeadline() != null
                 && LocalDateTime.now().isAfter(activity.getRegistrationDeadline())) {
@@ -227,5 +232,15 @@ public class EnrollmentService {
     /** 按 ID 查询报名记录（控制器跳转用） */
     public Enrollment findByIdHelper(Long id) {
         return enrollmentRepository.findById(id).orElse(null);
+    }
+
+    /** 管理员统计：全部报名记录（V3.0 FR21） */
+    public List<Enrollment> findAll() {
+        return enrollmentRepository.findAll();
+    }
+
+    /** 管理员统计：待审核报名数（V3.0 FR21） */
+    public long countPending() {
+        return enrollmentRepository.countByStatus(Enrollment.Status.PENDING);
     }
 }

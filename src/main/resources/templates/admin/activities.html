@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>活动监管 - 校园活动管理系统</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
+        th, td { padding: 10px; border-bottom: 1px solid #e3e3de; text-align: left; }
+        th { color: #5f5e5a; font-weight: 500; }
+        .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .actions .btn { width: auto; margin: 0; padding: 4px 10px; font-size: 12px; }
+        .empty { text-align: center; color: #888780; padding: 24px; }
+        form.inline { display: inline; }
+        .reason { width: 120px; padding: 4px 6px; font-size: 12px; border: 1px solid #d3d1c7; border-radius: 4px; }
+    </style>
+</head>
+<body>
+<div class="container" style="max-width: 1000px;">
+    <h1>活动监管</h1>
+    <p class="muted">查看全部活动并处理违规信息（FR18 / FR19）</p>
+
+    <div class="banner success" th:if="${param.success}" th:text="${param.success}"></div>
+
+    <table th:if="${!#lists.isEmpty(activities)}">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>活动标题</th>
+            <th>发布教师ID</th>
+            <th>业务状态</th>
+            <th>平台状态</th>
+            <th>操作</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="act : ${activities}">
+            <td th:text="${act.id}">1</td>
+            <td th:text="${act.title}">标题</td>
+            <td th:text="${act.teacherId}">1</td>
+            <td>
+                <span class="status" th:classappend="${act.status.name() == 'OPEN'} ? 'status-open' : (${act.status.name() == 'CLOSED'} ? 'status-closed' : 'status-cancelled')"
+                      th:text="${act.status.name() == 'OPEN'} ? '报名中' : (${act.status.name() == 'CLOSED'} ? '已结束' : '已取消')">状态</span>
+            </td>
+            <td>
+                <span class="status" th:classappend="${act.platformStatus.name() == 'NORMAL'} ? 'status-open' : (${act.platformStatus.name() == 'FLAGGED'} ? 'status-pending' : 'status-rejected')"
+                      th:text="${act.platformStatus.name() == 'NORMAL'} ? '正常' : (${act.platformStatus.name() == 'FLAGGED'} ? '待整改' : '已下架')">平台状态</span>
+            </td>
+            <td>
+                <div class="actions">
+                    <form class="inline" th:if="${act.platformStatus.name() == 'NORMAL'}"
+                          th:action="@{/admin/activities/{id}/flag(id=${act.id})}" method="post"
+                          onsubmit="return confirm('确定标记该活动待整改？');">
+                        <input type="text" name="reason" class="reason" placeholder="整改原因" required>
+                        <button type="submit" class="btn btn-secondary">标记整改</button>
+                    </form>
+                    <form class="inline" th:if="${act.platformStatus.name() != 'SUSPENDED'}"
+                          th:action="@{/admin/activities/{id}/suspend(id=${act.id})}" method="post"
+                          onsubmit="return confirm('确定下架该活动？');">
+                        <input type="text" name="reason" class="reason" placeholder="下架原因" required>
+                        <button type="submit" class="btn btn-danger">下架</button>
+                    </form>
+                    <form class="inline" th:if="${act.platformStatus.name() != 'NORMAL'}"
+                          th:action="@{/admin/activities/{id}/restore(id=${act.id})}" method="post"
+                          onsubmit="return confirm('确定恢复该活动？');">
+                        <input type="text" name="reason" class="reason" placeholder="恢复原因" required>
+                        <button type="submit" class="btn btn-success">恢复</button>
+                    </form>
+                </div>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div th:if="${#lists.isEmpty(activities)}" class="empty">暂无活动</div>
+
+    <p style="text-align:center; margin-top: 24px;">
+        <a class="link" th:href="@{/admin/dashboard}">返回工作台</a>
+    </p>
+</div>
+</body>
+</html>

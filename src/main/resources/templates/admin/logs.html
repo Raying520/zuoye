@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>操作日志 - 校园活动管理系统</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
+        th, td { padding: 10px; border-bottom: 1px solid #e3e3de; text-align: left; }
+        th { color: #5f5e5a; font-weight: 500; }
+        .empty { text-align: center; color: #888780; padding: 24px; }
+    </style>
+</head>
+<body>
+<div class="container" style="max-width: 900px;">
+    <h1>操作日志</h1>
+    <p class="muted">管理员关键操作留痕（FR20 / BR17）</p>
+
+    <table th:if="${!#lists.isEmpty(logs)}">
+        <thead>
+        <tr>
+            <th>时间</th>
+            <th>操作类型</th>
+            <th>对象类型</th>
+            <th>对象ID</th>
+            <th>操作原因</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="log : ${logs}">
+            <td th:text="${#temporals.format(log.createTime, 'yyyy-MM-dd HH:mm')}">时间</td>
+            <td>
+                <span th:switch="${log.operationType}">
+                    <span th:case="'DISABLE_USER'">停用账号</span>
+                    <span th:case="'ENABLE_USER'">启用账号</span>
+                    <span th:case="'FLAG_ACTIVITY'">标记整改</span>
+                    <span th:case="'SUSPEND_ACTIVITY'">下架活动</span>
+                    <span th:case="'RESTORE_ACTIVITY'">恢复活动</span>
+                    <span th:case="*" th:text="${log.operationType}">类型</span>
+                </span>
+            </td>
+            <td th:text="${log.targetType == 'USER'} ? '用户' : '活动'">对象</td>
+            <td th:text="${log.targetId}">1</td>
+            <td th:text="${log.reason} ?: '—'">原因</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div th:if="${#lists.isEmpty(logs)}" class="empty">暂无操作日志</div>
+
+    <p style="text-align:center; margin-top: 24px;">
+        <a class="link" th:href="@{/admin/dashboard}">返回工作台</a>
+    </p>
+</div>
+</body>
+</html>

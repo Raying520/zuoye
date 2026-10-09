@@ -22,7 +22,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(loginInterceptor)
                 // 需要登录才能访问的路径（后续活动、报名模块逐步加入）
-                .addPathPatterns("/teacher/**", "/student/**", "/activities/**", "/enrollments/**")
+                .addPathPatterns("/teacher/**", "/student/**", "/activities/**", "/enrollments/**", "/admin/**")
                 // 放行路径：首页、静态资源、注册、登录、登出
                 .excludePathPatterns("/", "/register", "/login", "/logout", "/css/**", "/js/**", "/images/**");
     }

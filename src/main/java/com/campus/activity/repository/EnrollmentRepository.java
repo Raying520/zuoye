@@ -38,4 +38,7 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
 
     /** 查询某活动中最大的候补序号（生成下一个候补序号用） */
     Optional<Enrollment> findFirstByActivityIdAndStatusOrderByWaitingNoDesc(Long activityId, Enrollment.Status status);
+
+    /** 统计指定状态的报名记录总数（V3.0 平台统计） */
+    long countByStatus(Enrollment.Status status);
 }

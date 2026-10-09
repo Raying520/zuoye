@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>用户管理 - 校园活动管理系统</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
+        th, td { padding: 10px; border-bottom: 1px solid #e3e3de; text-align: left; }
+        th { color: #5f5e5a; font-weight: 500; }
+        .actions { display: flex; gap: 8px; }
+        .actions .btn { width: auto; margin: 0; padding: 4px 10px; font-size: 12px; }
+        .empty { text-align: center; color: #888780; padding: 24px; }
+        form.inline { display: inline; }
+        .reason { width: 120px; padding: 4px 6px; font-size: 12px; border: 1px solid #d3d1c7; border-radius: 4px; }
+    </style>
+</head>
+<body>
+<div class="container" style="max-width: 900px;">
+    <h1>用户管理</h1>
+    <p class="muted">查看平台用户并管理账号状态（FR16 / FR17）</p>
+
+    <div class="banner success" th:if="${param.success}" th:text="${param.success}"></div>
+
+    <table th:if="${!#lists.isEmpty(users)}">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>账号</th>
+            <th>姓名</th>
+            <th>角色</th>
+            <th>状态</th>
+            <th>操作</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="user : ${users}">
+            <td th:text="${user.id}">1</td>
+            <td th:text="${user.username}">账号</td>
+            <td th:text="${user.name}">姓名</td>
+            <td>
+                <span th:switch="${user.role.name()}">
+                    <span th:case="'STUDENT'">学生</span>
+                    <span th:case="'TEACHER'">教师</span>
+                    <span th:case="'ADMIN'">管理员</span>
+                </span>
+            </td>
+            <td>
+                <span class="status" th:classappend="${user.status.name() == 'ENABLED'} ? 'status-open' : 'status-rejected'"
+                      th:text="${user.status.name() == 'ENABLED'} ? '正常' : '已停用'">状态</span>
+            </td>
+            <td>
+                <div class="actions" th:if="${user.role.name() != 'ADMIN'}">
+                    <form class="inline" th:if="${user.status.name() == 'ENABLED'}"
+                          th:action="@{/admin/users/{id}/disable(id=${user.id})}" method="post"
+                          onsubmit="return confirm('确定停用该账号？');">
+                        <input type="text" name="reason" class="reason" placeholder="停用原因" required>
+                        <button type="submit" class="btn btn-danger">停用</button>
+                    </form>
+                    <form class="inline" th:if="${user.status.name() == 'DISABLED'}"
+                          th:action="@{/admin/users/{id}/enable(id=${user.id})}" method="post"
+                          onsubmit="return confirm('确定恢复该账号？');">
+                        <input type="text" name="reason" class="reason" placeholder="恢复原因" required>
+                        <button type="submit" class="btn btn-success">启用</button>
+                    </form>
+                </div>
+                <span th:if="${user.role.name() == 'ADMIN'}" class="muted">系统账号不可操作</span>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div th:if="${#lists.isEmpty(users)}" class="empty">暂无用户</div>
+
+    <p style="text-align:center; margin-top: 24px;">
+        <a class="link" th:href="@{/admin/dashboard}">返回工作台</a>
+    </p>
+</div>
+</body>
+</html>

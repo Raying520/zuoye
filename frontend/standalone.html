@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>校园活动管理系统 V2.0</title>
+    <title>校园活动管理系统 V3.0</title>
     <style>
         :root {
             --primary: #2c7a7b; --primary-dark: #285e61; --secondary: #ed8936;
@@ -86,7 +86,7 @@
     </div>
 
     <footer>
-        <div class="container">校园活动管理系统 V2.0 · 基于工程意图的软件迭代开发 · 单文件独立运行版</div>
+        <div class="container">校园活动管理系统 V3.0 · 基于工程意图的软件迭代开发 · 单文件独立运行版</div>
     </footer>
 
 <script>
@@ -102,9 +102,10 @@ function getDB() {
 function initDB() {
     const db = {
         users: [
-            { id: 1, username: 'teacher01', password: '123456', name: '王老师', role: 'teacher' },
-            { id: 2, username: 'student01', password: '123456', name: '张同学', role: 'student' },
-            { id: 3, username: 'student02', password: '123456', name: '李同学', role: 'student' }
+            { id: 1, username: 'teacher01', password: '123456', name: '王老师', role: 'teacher', status: 'ENABLED' },
+            { id: 2, username: 'student01', password: '123456', name: '张同学', role: 'student', status: 'ENABLED' },
+            { id: 3, username: 'student02', password: '123456', name: '李同学', role: 'student', status: 'ENABLED' },
+            { id: 4, username: 'admin', password: 'admin123', name: '系统管理员', role: 'admin', status: 'ENABLED' }
         ],
         activities: [
             { id: 1, title: '校园编程马拉松', description: '面向全校学生的 24 小时编程挑战赛。', activityTime: '2026-09-25T09:00', place: '计算机楼 301', capacity: 2, requirements: '自带电脑，熟悉任一编程语言', registrationDeadline: '2026-09-24T23:59', requireAudit: false, allowWaitlist: true, status: 'OPEN', teacherId: 1, createTime: '2026-09-10T10:00' },
@@ -124,7 +125,7 @@ function findUserById(id) { return getDB().users.find(u => u.id === id); }
 function register(username, password, name, role) {
     const db = getDB();
     if (db.users.some(u => u.username === username)) return { success: false, message: '账号已存在' };
-    db.users.push({ id: db.nextUserId++, username, password, name, role });
+    db.users.push({ id: db.nextUserId++, username, password, name, role, status: 'ENABLED' });
     saveDB(db);
     return { success: true };
 }
@@ -132,6 +133,7 @@ function register(username, password, name, role) {
 function login(username, password) {
     const user = findUserByUsername(username);
     if (!user || user.password !== password) return { success: false, message: '账号或密码错误' };
+    if (user.status === 'DISABLED') return { success: false, message: '账号已被停用，请联系管理员' };
     sessionStorage.setItem('currentUser', JSON.stringify(user));
     return { success: true, user };
 }
@@ -141,7 +143,9 @@ function getCurrentUser() { const raw = sessionStorage.getItem('currentUser'); r
 
 function getAllActivities() {
     const db = getDB();
-    return db.activities.map(act => ({ ...act, approvedCount: countApproved(act.id), waitingCount: countWaiting(act.id) }))
+    return db.activities
+        .filter(act => act.platformStatus !== 'SUSPENDED')
+        .map(act => ({ ...act, approvedCount: countApproved(act.id), waitingCount: countWaiting(act.id) }))
         .sort((a, b) => new Date(b.activityTime) - new Date(a.activityTime));
 }
 function getActivityById(id) {
@@ -328,10 +332,10 @@ function renderHeader() {
     const header = document.getElementById('header-nav');
     let html = '';
     if (user) {
-        const roleName = user.role === 'teacher' ? '教师' : '学生';
+        const roleName = { teacher: '教师', student: '学生', admin: '管理员' }[user.role] || '用户';
         html += `<span>${user.name}（${roleName}）</span>`;
         html += `<a onclick="go('home')" class="link">工作台</a>`;
-        html += `<a onclick="go('activities')" class="link">活动列表</a>`;
+        if (user.role !== 'admin') html += `<a onclick="go('activities')" class="link">活动列表</a>`;
         html += `<a onclick="handleLogout()" class="link">退出登录</a>`;
     } else {
         html += `<a onclick="go('home')" class="link">首页</a>`;
@@ -398,6 +402,48 @@ const pages = {
                     ${list.length ? list.map(act => activityItem(act, true)).join('') : '<div class="empty">暂无活动</div>'}
                 </div>`;
         }
+        if (user.role === 'admin') {
+            const db = getDB();
+            const userCount = db.users.length;
+            const activityCount = db.activities.length;
+            const enrollmentCount = db.enrollments.length;
+            const pendingCount = db.enrollments.filter(e => e.status === 'PENDING').length;
+            const flaggedCount = db.activities.filter(a => a.platformStatus === 'FLAGGED').length;
+            const suspendedCount = db.activities.filter(a => a.platformStatus === 'SUSPENDED').length;
+            return `
+                <div class="card">
+                    <h2>管理员工作台</h2>
+                    <p style="color:var(--text-light);">欢迎 ${user.name}，您可以监管用户、活动和查看操作日志。</p>
+                    <div class="actions">
+                        <button class="btn btn-primary" onclick="go('admin-users')">用户管理</button>
+                        <button class="btn btn-secondary" onclick="go('admin-activities')">活动监管</button>
+                        <button class="btn btn-outline" onclick="go('admin-logs')">操作日志</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>平台概览</h3>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:16px;margin-top:16px;">
+                        <div style="background:#f7fafc;border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center;">
+                            <div style="font-size:24px;font-weight:600;color:var(--primary);">${userCount}</div><div style="font-size:12px;color:var(--text-light);">用户总数</div>
+                        </div>
+                        <div style="background:#f7fafc;border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center;">
+                            <div style="font-size:24px;font-weight:600;color:var(--primary);">${activityCount}</div><div style="font-size:12px;color:var(--text-light);">活动总数</div>
+                        </div>
+                        <div style="background:#f7fafc;border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center;">
+                            <div style="font-size:24px;font-weight:600;color:var(--primary);">${enrollmentCount}</div><div style="font-size:12px;color:var(--text-light);">报名总数</div>
+                        </div>
+                        <div style="background:#f7fafc;border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center;">
+                            <div style="font-size:24px;font-weight:600;color:var(--primary);">${pendingCount}</div><div style="font-size:12px;color:var(--text-light);">待审核报名</div>
+                        </div>
+                        <div style="background:#f7fafc;border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center;">
+                            <div style="font-size:24px;font-weight:600;color:var(--primary);">${flaggedCount}</div><div style="font-size:12px;color:var(--text-light);">待整改活动</div>
+                        </div>
+                        <div style="background:#f7fafc;border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center;">
+                            <div style="font-size:24px;font-weight:600;color:var(--primary);">${suspendedCount}</div><div style="font-size:12px;color:var(--text-light);">已下架活动</div>
+                        </div>
+                    </div>
+                </div>`;
+        }
         const list = getAllActivities().slice(0, 5);
         return `
             <div class="card">
@@ -435,7 +481,7 @@ const pages = {
                 <form onsubmit="submitRegister(event)">
                     <div class="form-group"><label>账号</label><input type="text" id="username" required placeholder="请设置登录账号"></div>
                     <div class="form-group"><label>姓名</label><input type="text" id="name" required placeholder="请输入姓名"></div>
-                    <div class="form-group"><label>角色</label><select id="role" required><option value="">请选择角色</option><option value="student">学生</option><option value="teacher">教师</option></select></div>
+                    <div class="form-group"><label>角色</label><select id="role" required><option value="">请选择角色</option><option value="student">学生</option><option value="teacher">教师</option><option value="admin">系统管理员</option></select></div>
                     <div class="form-group"><label>密码</label><input type="password" id="password" required placeholder="请设置密码"></div>
                     <div class="form-group"><label>确认密码</label><input type="password" id="password2" required placeholder="再次输入密码"></div>
                     <button type="submit" class="btn btn-primary" style="width:100%;">注册</button>
@@ -652,6 +698,97 @@ const pages = {
                     }).join('') : '<div class="empty">你还没有报名任何活动</div>'}
                 </div>
             </div>`;
+    },
+
+    'admin-users'() {
+        const user = requireLogin('admin');
+        if (!user) return '';
+        const db = getDB();
+        return `
+            <div class="card">
+                <h2>用户管理</h2>
+                <p style="color:var(--text-light);">查看平台用户并启用/停用账号</p>
+                <table style="margin-top:16px;">
+                    <thead><tr><th>ID</th><th>账号</th><th>姓名</th><th>角色</th><th>状态</th><th>操作</th></tr></thead>
+                    <tbody>
+                        ${db.users.map(u => `
+                            <tr>
+                                <td>${u.id}</td>
+                                <td>${escapeHtml(u.username)}</td>
+                                <td>${escapeHtml(u.name)}</td>
+                                <td>${{student:'学生',teacher:'教师',admin:'管理员'}[u.role]}</td>
+                                <td><span class="status ${u.status === 'ENABLED' ? 'status-open' : 'status-rejected'}">${u.status === 'ENABLED' ? '正常' : '已停用'}</span></td>
+                                <td>
+                                    ${u.role !== 'admin' ? `
+                                        ${u.status === 'ENABLED' ? `<button class="btn btn-danger" style="padding:4px 10px;font-size:12px;" onclick="toggleUserStatus(${u.id},'DISABLED')">停用</button>` : `<button class="btn btn-success" style="padding:4px 10px;font-size:12px;" onclick="toggleUserStatus(${u.id},'ENABLED')">启用</button>`}
+                                    ` : '<span style="font-size:12px;color:var(--text-light);">系统账号</span>'}
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                <div class="actions" style="margin-top:20px;"><button class="btn btn-outline" onclick="go('home')">返回工作台</button></div>
+            </div>`;
+    },
+
+    'admin-activities'() {
+        const user = requireLogin('admin');
+        if (!user) return '';
+        const db = getDB();
+        return `
+            <div class="card">
+                <h2>活动监管</h2>
+                <p style="color:var(--text-light);">查看全部活动并处理违规信息</p>
+                <table style="margin-top:16px;">
+                    <thead><tr><th>ID</th><th>标题</th><th>教师ID</th><th>业务状态</th><th>平台状态</th><th>操作</th></tr></thead>
+                    <tbody>
+                        ${db.activities.map(a => `
+                            <tr>
+                                <td>${a.id}</td>
+                                <td>${escapeHtml(a.title)}</td>
+                                <td>${a.teacherId}</td>
+                                <td><span class="status ${statusClass(a.status)}">${statusText(a.status)}</span></td>
+                                <td><span class="status ${a.platformStatus === 'NORMAL' ? 'status-open' : (a.platformStatus === 'FLAGGED' ? 'status-pending' : 'status-rejected')}">${a.platformStatus === 'NORMAL' ? '正常' : (a.platformStatus === 'FLAGGED' ? '待整改' : '已下架')}</span></td>
+                                <td>
+                                    ${a.platformStatus !== 'FLAGGED' ? `<button class="btn btn-secondary" style="padding:4px 10px;font-size:12px;" onclick="setActivityStatus(${a.id},'FLAGGED')">标记整改</button>` : ''}
+                                    ${a.platformStatus !== 'SUSPENDED' ? `<button class="btn btn-danger" style="padding:4px 10px;font-size:12px;" onclick="setActivityStatus(${a.id},'SUSPENDED')">下架</button>` : ''}
+                                    ${a.platformStatus !== 'NORMAL' ? `<button class="btn btn-success" style="padding:4px 10px;font-size:12px;" onclick="setActivityStatus(${a.id},'NORMAL')">恢复</button>` : ''}
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                <div class="actions" style="margin-top:20px;"><button class="btn btn-outline" onclick="go('home')">返回工作台</button></div>
+            </div>`;
+    },
+
+    'admin-logs'() {
+        const user = requireLogin('admin');
+        if (!user) return '';
+        const db = getDB();
+        const logs = db.adminLogs || [];
+        return `
+            <div class="card">
+                <h2>操作日志</h2>
+                <p style="color:var(--text-light);">管理员关键操作留痕</p>
+                ${logs.length ? `
+                    <table style="margin-top:16px;">
+                        <thead><tr><th>时间</th><th>操作</th><th>对象</th><th>对象ID</th><th>原因</th></tr></thead>
+                        <tbody>
+                            ${logs.slice().reverse().map(l => `
+                                <tr>
+                                    <td>${formatDateTime(l.createTime)}</td>
+                                    <td>${{DISABLE_USER:'停用账号',ENABLE_USER:'启用账号',FLAG_ACTIVITY:'标记整改',SUSPEND_ACTIVITY:'下架活动',RESTORE_ACTIVITY:'恢复活动'}[l.operationType] || l.operationType}</td>
+                                    <td>${l.targetType === 'USER' ? '用户' : '活动'}</td>
+                                    <td>${l.targetId}</td>
+                                    <td>${escapeHtml(l.reason || '—')}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                ` : '<div class="empty" style="padding:24px 0;">暂无操作日志</div>'}
+                <div class="actions" style="margin-top:20px;"><button class="btn btn-outline" onclick="go('home')">返回工作台</button></div>
+            </div>`;
     }
 };
 
@@ -786,6 +923,52 @@ function rejectEnroll(enrollmentId) {
     const result = rejectEnrollment(enrollmentId, user.id);
     showAlert(result.message || '已拒绝', result.success ? 'success' : 'error');
     if (result.success) render();
+}
+
+function addAdminLog(operationType, targetType, targetId, reason) {
+    const db = getDB();
+    if (!db.adminLogs) db.adminLogs = [];
+    db.adminLogs.push({
+        id: db.adminLogs.length + 1,
+        operationType,
+        targetType,
+        targetId,
+        reason,
+        createTime: new Date().toISOString()
+    });
+    saveDB(db);
+}
+
+function toggleUserStatus(userId, status) {
+    const user = getCurrentUser();
+    if (user.role !== 'admin') { showAlert('无权操作', 'error'); return; }
+    const reason = prompt(status === 'DISABLED' ? '请输入停用原因' : '请输入启用原因');
+    if (!reason) return;
+    const db = getDB();
+    const target = db.users.find(u => u.id === userId);
+    if (!target) { showAlert('用户不存在', 'error'); return; }
+    if (target.role === 'admin') { showAlert('不可操作系统管理员账号', 'error'); return; }
+    target.status = status;
+    saveDB(db);
+    addAdminLog(status === 'DISABLED' ? 'DISABLE_USER' : 'ENABLE_USER', 'USER', userId, reason);
+    showAlert(status === 'DISABLED' ? '账号已停用' : '账号已启用', 'success');
+    render();
+}
+
+function setActivityStatus(activityId, platformStatus) {
+    const user = getCurrentUser();
+    if (user.role !== 'admin') { showAlert('无权操作', 'error'); return; }
+    const reason = prompt('请输入操作原因');
+    if (!reason) return;
+    const db = getDB();
+    const act = db.activities.find(a => a.id === activityId);
+    if (!act) { showAlert('活动不存在', 'error'); return; }
+    act.platformStatus = platformStatus;
+    saveDB(db);
+    const opMap = { NORMAL: 'RESTORE_ACTIVITY', FLAGGED: 'FLAG_ACTIVITY', SUSPENDED: 'SUSPEND_ACTIVITY' };
+    addAdminLog(opMap[platformStatus], 'ACTIVITY', activityId, reason);
+    showAlert('活动平台状态已更新', 'success');
+    render();
 }
 
 // ==================== 主渲染 ====================

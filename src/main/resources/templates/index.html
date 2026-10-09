@@ -8,7 +8,7 @@
 <body>
 <div class="container center">
     <h1>校园活动管理系统</h1>
-    <p class="muted">V1.0 · 项目已启动</p>
+    <p class="muted">V3.0 · 整合教师/学生/管理员三方需求</p>
 
     <!-- 未登录：显示注册/登录入口 -->
     <div th:if="${currentUser == null}" style="margin-top: 24px;">
@@ -23,6 +23,7 @@
 
         <a class="btn" th:if="${currentUser.teacher}" th:href="@{/teacher/home}">教师工作台</a>
         <a class="btn" th:if="${currentUser.student}" th:href="@{/student/home}">学生首页</a>
+        <a class="btn" th:if="${currentUser.admin}" th:href="@{/admin/dashboard}">管理员工作台</a>
 
         <p style="margin-top: 16px;">
             <a class="link" th:href="@{/logout}">退出登录</a>

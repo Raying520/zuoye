@@ -161,6 +161,12 @@ public class ActivityController {
         if (activity == null) {
             return "redirect:/activities";
         }
+        UserSession user = currentUser(session);
+        // V3.0 BR15：被管理员下架的活动对学生隐藏
+        if (activity.getPlatformStatus() == Activity.PlatformStatus.SUSPENDED
+                && (user == null || user.isStudent())) {
+            return "redirect:/activities";
+        }
         model.addAttribute("activity", activity);
         model.addAttribute("approvedCount", enrollmentService.approvedCount(id));
         model.addAttribute("waitingCount", enrollmentService.waitingCount(id));
