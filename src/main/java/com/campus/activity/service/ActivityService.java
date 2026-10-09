@@ -10,6 +10,7 @@ import com.campus.activity.repository.EnrollmentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -78,10 +79,12 @@ public class ActivityService {
     public List<ActivityListItem> findAllWithEnrollmentCount() {
         List<Activity> activities = activityRepository.findAllByOrderByActivityTimeDesc();
         List<ActivityListItem> result = new ArrayList<>(activities.size());
+        LocalDateTime now = LocalDateTime.now();
         for (Activity activity : activities) {
             long approved = countApproved(activity.getId());
             long waiting = countWaiting(activity.getId());
-            result.add(new ActivityListItem(activity, approved, waiting));
+            boolean deadlinePassed = isDeadlinePassed(activity, now);
+            result.add(new ActivityListItem(activity, approved, waiting, deadlinePassed));
         }
         return result;
     }
@@ -95,10 +98,12 @@ public class ActivityService {
     public List<ActivityListItem> findByTeacherWithEnrollmentCount(Long teacherId) {
         List<Activity> activities = activityRepository.findByTeacherIdOrderByActivityTimeDesc(teacherId);
         List<ActivityListItem> result = new ArrayList<>(activities.size());
+        LocalDateTime now = LocalDateTime.now();
         for (Activity activity : activities) {
             long approved = countApproved(activity.getId());
             long waiting = countWaiting(activity.getId());
-            result.add(new ActivityListItem(activity, approved, waiting));
+            boolean deadlinePassed = isDeadlinePassed(activity, now);
+            result.add(new ActivityListItem(activity, approved, waiting, deadlinePassed));
         }
         return result;
     }
@@ -144,5 +149,9 @@ public class ActivityService {
 
     private long countWaiting(Long activityId) {
         return enrollmentRepository.countByActivityIdAndStatus(activityId, Enrollment.Status.WAITING);
+    }
+
+    private boolean isDeadlinePassed(Activity activity, LocalDateTime now) {
+        return activity.getRegistrationDeadline() != null && now.isAfter(activity.getRegistrationDeadline());
     }
 }

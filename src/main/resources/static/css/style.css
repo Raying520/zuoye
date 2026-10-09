@@ -76,3 +76,13 @@ a.link { color: #185fa5; font-size: 13px; text-decoration: none; }
 .actions .btn-secondary { background: #5f5e5a; }
 .actions .btn-danger { background: #a32d2d; }
 .actions .btn-success { background: #2f7d55; }
+
+.hint {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 4px;
+    background: #f5f6f8;
+    color: #5f5e5a;
+    font-size: 12px;
+    line-height: 1.5;
+}

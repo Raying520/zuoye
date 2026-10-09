@@ -486,9 +486,22 @@ const pages = {
             if (act.status === 'OPEN') actions += ` <button class="btn btn-secondary" onclick="go('activity-form',{mode:'edit',id:${act.id}})">编辑活动</button>`;
             actions += ` <button class="btn btn-secondary" onclick="go('activity-manage')">管理活动</button>`;
         }
+        const statusCard = (user.role === 'student' && my) ? `
+            <div style="background:#f7fafc;border:1px solid var(--border);border-radius:8px;padding:16px;margin:16px 0;">
+                <div style="font-weight:600;margin-bottom:6px;">你的报名状态：
+                    <span class="status ${enrollmentStatusClass(my.status)}">${enrollmentStatusText(my.status)}${my.status === 'WAITING' ? ' 第 ' + my.waitingNo + ' 位' : ''}</span>
+                </div>
+                <div style="font-size:13px;color:var(--text-light);line-height:1.6;">
+                    ${my.status === 'PENDING' ? '你的报名申请已提交，请等待活动组织教师审核。审核通过后若活动仍有名额，你将正式参加。' : ''}
+                    ${my.status === 'APPROVED' ? '你已通过审核，名额已确认。如临时无法参加，请及时取消报名，把机会留给其他同学。' : ''}
+                    ${my.status === 'WAITING' ? '当前活动名额已满，你排在候补队列。如果有人取消报名，系统会按候补顺序自动将你转正。' : ''}
+                    ${my.status === 'REJECTED' ? '你未通过本次活动审核，具体原因请查看活动参与条件或联系组织教师。' : ''}
+                </div>
+            </div>
+        ` : '';
         return `
             <div class="card">
-                <h2>${act.title} <span class="status ${statusClass(act.status)}">${statusText(act.status)}</span></h2>
+                <h2>${act.title} <span class="status ${statusClass(act.status)}">${statusText(act.status)}</span>${deadlinePassed ? ' <span class="status status-rejected">已截止</span>' : ''}</h2>
                 <div class="meta" style="margin-bottom:16px;">发布时间：${formatDateTime(act.createTime)} · 发布者：${teacher?.name || '未知'}</div>
                 <p><strong>活动时间：</strong>${formatDateTime(act.activityTime)}</p>
                 <p><strong>活动地点：</strong>${act.place}</p>
@@ -496,9 +509,10 @@ const pages = {
                 <p><strong>活动容量：</strong>${act.capacity} 人</p>
                 <p><strong>已通过：</strong>${act.approvedCount} 人${act.waitingCount > 0 ? ' · 候补 ' + act.waitingCount + ' 人' : ''}</p>
                 ${act.requireAudit ? '<p><span class="status status-pending">需要教师审核</span></p>' : ''}
-                ${act.allowWaitlist ? '<p><span class="status status-waiting">满员后开放候补</span></p>' : ''}
+                ${act.allowWaitlist ? '<p><span class="status status-waiting">满员后开放候补，按报名先后顺序递补</span></p>' : ''}
                 ${act.requirements ? `<p><strong>参与条件：</strong>${act.requirements}</p>` : ''}
                 <p style="margin-top:12px;">${act.description}</p>
+                ${statusCard}
                 <div class="actions">${actions}</div>
             </div>`;
     },
@@ -574,22 +588,33 @@ const pages = {
         if (!act) return `<div class="card"><div class="empty">活动不存在</div></div>`;
         if (act.teacherId !== user.id) return `<div class="card"><div class="empty">无权查看该活动的报名名单</div></div>`;
         const list = getEnrollmentsByActivity(id);
-        const pendingCount = list.filter(e => e.status === 'PENDING').length;
+        const pending = list.filter(e => e.status === 'PENDING');
+        const approved = list.filter(e => e.status === 'APPROVED');
+        const waiting = list.filter(e => e.status === 'WAITING');
+        const rejected = list.filter(e => e.status === 'REJECTED');
+        const renderGroup = (title, rows, columns) => rows.length ? `
+            <h3 style="font-size:16px;margin:20px 0 8px;padding-bottom:6px;border-bottom:2px solid var(--border);">${title}</h3>
+            <table>
+                <thead><tr>${columns.map(c => `<th>${c}</th>`).join('')}</tr></thead>
+                <tbody>${rows.map((e, idx) => `<tr>
+                    <td>${idx+1}</td>
+                    <td>${e.userName}</td>
+                    <td><span class="status ${enrollmentStatusClass(e.status)}">${enrollmentStatusText(e.status)}${e.status === 'WAITING' ? ' 第 ' + e.waitingNo + ' 位' : ''}</span></td>
+                    <td>${formatDateTime(e.createTime)}</td>
+                    ${e.status === 'PENDING' ? `<td>${act.status === 'OPEN' ? `<button class="btn btn-success" style="padding:4px 10px;font-size:12px;" onclick="approveEnroll(${e.id})">通过</button> <button class="btn btn-danger" style="padding:4px 10px;font-size:12px;" onclick="rejectEnroll(${e.id})">拒绝</button>` : ''}</td>` : ''}
+                </tr>`).join('')}</tbody>
+            </table>
+        ` : '';
         return `
             <div class="card">
                 <h2>报名名单</h2>
-                <div class="meta" style="margin-bottom:16px;">活动：<strong>${act.title}</strong> · 状态：<span class="status ${statusClass(act.status)}">${statusText(act.status)}</span> · 已通过：${act.approvedCount}/${act.capacity} · 待审核：${pendingCount} · 候补：${act.waitingCount}</div>
+                <div class="meta" style="margin-bottom:16px;">活动：<strong>${act.title}</strong> · 状态：<span class="status ${statusClass(act.status)}">${statusText(act.status)}</span> · 已通过：${act.approvedCount}/${act.capacity} · 待审核：${pending.length} · 候补：${act.waitingCount}</div>
                 ${list.length ? `
-                    <table>
-                        <thead><tr><th>序号</th><th>姓名</th><th>状态</th><th>报名时间</th><th>操作</th></tr></thead>
-                        <tbody>${list.map((e, idx) => `<tr>
-                            <td>${idx+1}</td>
-                            <td>${e.userName}</td>
-                            <td><span class="status ${enrollmentStatusClass(e.status)}">${enrollmentStatusText(e.status)}${e.status === 'WAITING' ? ' 第 ' + e.waitingNo + ' 位' : ''}</span></td>
-                            <td>${formatDateTime(e.createTime)}</td>
-                            <td>${act.status === 'OPEN' && e.status === 'PENDING' ? `<button class="btn btn-success" style="padding:4px 10px;font-size:12px;" onclick="approveEnroll(${e.id})">通过</button> <button class="btn btn-danger" style="padding:4px 10px;font-size:12px;" onclick="rejectEnroll(${e.id})">拒绝</button>` : ''}</td>
-                        </tr>`).join('')}</tbody>
-                    </table>
+                    ${renderGroup('待审核', pending, ['序号','姓名','状态','报名时间','操作'])}
+                    ${renderGroup('已通过', approved, ['序号','姓名','状态','报名时间'])}
+                    ${waiting.length ? `<p style="font-size:13px;color:var(--text-light);margin-top:16px;">以下学生按报名先后顺序排队，有人取消时将自动按顺序转正。</p>` : ''}
+                    ${renderGroup('候补队列', waiting, ['候补序号','姓名','状态','报名时间'])}
+                    ${renderGroup('已拒绝', rejected, ['序号','姓名','状态','报名时间'])}
                 ` : '<div class="empty">暂无学生报名</div>'}
                 <div class="actions" style="margin-top:20px;"><button class="btn btn-outline" onclick="go('activity-manage')">返回管理列表</button></div>
             </div>`;
@@ -615,6 +640,12 @@ const pages = {
                                 <p style="margin-top:8px;font-size:13px;color:var(--text-light);">
                                     报名时间：${formatDateTime(item.createTime)} · 状态：<span class="status ${enrollmentStatusClass(item.status)}">${enrollmentStatusText(item.status)}${item.status === 'WAITING' ? ' 第 ' + item.waitingNo + ' 位' : ''}</span>
                                 </p>
+                                <p style="margin-top:6px;font-size:12px;color:var(--text-light);line-height:1.5;">
+                                    ${item.status === 'PENDING' ? '已提交报名申请，等待教师审核。请留意本页状态变化。' : ''}
+                                    ${item.status === 'APPROVED' ? '名额已确认。如临时无法参加，请尽快取消报名，释放名额。' : ''}
+                                    ${item.status === 'WAITING' ? '排在候补队列。如果有人取消报名，系统将按候补顺序自动把你转正。' : ''}
+                                    ${item.status === 'REJECTED' ? '未通过审核，可查看活动参与条件或重新提交报名申请。' : ''}
+                                </p>
                                 ${act.status === 'OPEN' && item.status !== 'REJECTED' ? `<div class="actions"><button class="btn btn-danger" onclick="cancelEnroll(${act.id})">取消报名</button></div>` : ''}
                             </div>
                         `;
@@ -624,11 +655,16 @@ const pages = {
     }
 };
 
+function isDeadlinePassedLocal(act) {
+    return act.registrationDeadline && new Date() > new Date(act.registrationDeadline);
+}
+
 function activityItem(act, manage) {
+    const deadlinePassed = isDeadlinePassedLocal(act);
     return `
         <div class="activity-item">
             <h3><a onclick="go('activity-detail',{id:${act.id}})" class="link">${act.title}</a></h3>
-            <div class="meta">时间：${formatDateTime(act.activityTime)} · 地点：${act.place} · 已通过：${act.approvedCount}/${act.capacity} 人${act.waitingCount ? ' · 候补 ' + act.waitingCount + ' 人' : ''} <span class="status ${statusClass(act.status)}">${statusText(act.status)}</span>${act.requireAudit ? ' <span class="status status-pending">需审核</span>' : ''}${act.allowWaitlist ? ' <span class="status status-waiting">可候补</span>' : ''}</div>
+            <div class="meta">时间：${formatDateTime(act.activityTime)} · 地点：${act.place} · 已通过：${act.approvedCount}/${act.capacity} 人${act.waitingCount ? ' · 候补 ' + act.waitingCount + ' 人' : ''} <span class="status ${statusClass(act.status)}">${statusText(act.status)}</span>${act.status === 'OPEN' && deadlinePassed ? ' <span class="status status-rejected">已截止</span>' : ''}${act.requireAudit ? ' <span class="status status-pending">需审核</span>' : ''}${act.allowWaitlist ? ' <span class="status status-waiting">可候补</span>' : ''}</div>
             <p style="margin-top:8px;font-size:14px;color:var(--text-light);">${act.description.length > 80 ? act.description.slice(0,80)+'…' : act.description}</p>
             ${manage ? `<div class="actions"><button class="btn btn-outline" onclick="go('activity-enrollments',{id:${act.id}})">查看名单</button></div>` : ''}
         </div>

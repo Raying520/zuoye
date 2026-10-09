@@ -10,6 +10,16 @@
         .actions { margin-top: 24px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
         .actions form { display: inline; }
         .actions .btn-secondary { background: #888780; }
+        .status-card {
+            border: 1px solid #e3e3de;
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin: 18px 0;
+            background: #f8f8f6;
+            text-align: left;
+        }
+        .status-card .title { font-weight: 600; font-size: 15px; margin-bottom: 6px; }
+        .status-card .hint { color: #5f5e5a; font-size: 13px; line-height: 1.6; }
     </style>
 </head>
 <body>
@@ -25,6 +35,7 @@
               th:text="${activity.status.name() == 'OPEN'} ? '报名中' : (${activity.status.name() == 'CLOSED'} ? '已结束' : '已取消')">
             状态
         </span>
+        <span th:if="${deadlinePassed and activity.status.name() == 'OPEN'}" class="status status-rejected">已截止</span>
     </div>
 
     <div class="detail-row">
@@ -40,7 +51,7 @@
     <div class="detail-row">
         <span class="detail-label">报名截止</span>
         <span th:text="${activity.registrationDeadline != null} ? ${#temporals.format(activity.registrationDeadline, 'yyyy-MM-dd HH:mm')} : '—'">截止</span>
-        <span th:if="${deadlinePassed}" class="status status-rejected">已截止</span>
+        <span th:if="${deadlinePassed and activity.status.name() == 'OPEN'}" class="status status-rejected">已截止</span>
     </div>
 
     <div class="detail-row">
@@ -56,7 +67,7 @@
 
     <div class="detail-row" th:if="${activity.allowWaitlist}">
         <span class="detail-label">候补机制</span>
-        <span class="status status-waiting">满员后开放候补</span>
+        <span class="status status-waiting">满员后开放候补，按报名先后顺序递补</span>
     </div>
 
     <div class="detail-row" th:if="${activity.requirements != null and !activity.requirements.isEmpty()}">
@@ -69,6 +80,24 @@
         <span class="detail-label">活动简介</span>
     </div>
     <p th:text="${activity.description} ?: '暂无简介'" style="white-space: pre-wrap; line-height: 1.6;"></p>
+
+    <!-- 学生当前报名状态卡片（FR12 / V2.1 优化） -->
+    <div th:if="${currentUser != null and currentUser.student and myEnrollment != null}" class="status-card">
+        <div class="title">
+            你的报名状态：
+            <span th:if="${myEnrollment.status.name() == 'APPROVED'}" class="status status-open">已报名</span>
+            <span th:if="${myEnrollment.status.name() == 'PENDING'}" class="status status-pending">审核中</span>
+            <span th:if="${myEnrollment.status.name() == 'WAITING'}" class="status status-waiting"
+                  th:text="'候补第 ' + ${myEnrollment.waitingNo} + ' 位'">候补</span>
+            <span th:if="${myEnrollment.status.name() == 'REJECTED'}" class="status status-rejected">未通过审核</span>
+        </div>
+        <p class="hint">
+            <span th:if="${myEnrollment.status.name() == 'PENDING'}">你的报名申请已提交，请等待活动组织教师审核。审核通过后若活动仍有名额，你将正式参加。</span>
+            <span th:if="${myEnrollment.status.name() == 'APPROVED'}">你已通过审核，名额已确认。如临时无法参加，请及时取消报名，把机会留给其他同学。</span>
+            <span th:if="${myEnrollment.status.name() == 'WAITING'}">当前活动名额已满，你排在候补队列。如果有人取消报名，系统会按候补顺序自动将你转正。</span>
+            <span th:if="${myEnrollment.status.name() == 'REJECTED'}">你未通过本次活动审核，具体原因请查看活动参与条件或联系组织教师。</span>
+        </p>
+    </div>
 
     <!-- 学生操作区：报名 / 取消 / 状态可见（FR5、FR12、FR14） -->
     <div class="actions" th:if="${currentUser != null and currentUser.student}">

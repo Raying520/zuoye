@@ -39,6 +39,12 @@
                   th:text="'候补第 ' + ${item.enrollment.waitingNo} + ' 位'">候补</span>
             <span th:if="${item.enrollment.status.name() == 'REJECTED'}" class="status status-rejected">未通过审核</span>
         </p>
+        <p class="meta" style="margin-top: 8px;">
+            <span th:if="${item.enrollment.status.name() == 'PENDING'}" class="hint">已提交报名申请，等待教师审核。请留意活动详情页状态变化。</span>
+            <span th:if="${item.enrollment.status.name() == 'APPROVED'}" class="hint">名额已确认。如临时无法参加，请尽快取消报名，释放名额。</span>
+            <span th:if="${item.enrollment.status.name() == 'WAITING'}" class="hint">当前排在候补队列，如果有人取消报名，系统将按候补顺序自动把你转正。</span>
+            <span th:if="${item.enrollment.status.name() == 'REJECTED'}" class="hint">未通过审核，你可查看活动参与条件或重新提交报名申请。</span>
+        </p>
     </div>
 
     <p style="text-align:center; margin-top: 16px;">

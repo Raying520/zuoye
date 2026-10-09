@@ -39,6 +39,7 @@
                   th:text="${item.activity.status.name() == 'OPEN'} ? '报名中' : (${item.activity.status.name() == 'CLOSED'} ? '已结束' : '已取消')">
                 状态
             </span>
+            <span th:if="${item.activity.status.name() == 'OPEN' and item.deadlinePassed}" class="status status-rejected">已截止</span>
             <span th:if="${item.activity.requireAudit}" class="status status-pending">需审核</span>
             <span th:if="${item.activity.allowWaitlist}" class="status status-waiting">可候补</span>
         </p>
